@@ -356,11 +356,14 @@ async function doSubmit() {
   let hasError = false;
   const model = document.getElementById('field-model').value;
   const firstName = document.getElementById('field-firstname').value.trim();
-  const phone = document.getElementById('field-phone').value.trim();
+  let phone = document.getElementById('field-phone').value.trim().replace(/[\s\-]/g, '');
+
+  // เติม 0 นำหน้าถ้าเบอร์ขึ้นต้นด้วย 6, 8, 9 และมี 9 ตัว
+  if (/^[689]\d{8}$/.test(phone)) phone = '0' + phone;
 
   if (!model) { showFieldError('err-model', 'field-model'); hasError = true; }
   if (!firstName) { showFieldError('err-firstname', 'field-firstname'); hasError = true; }
-  if (!phone || !/^[0-9\-+\s]{9,15}$/.test(phone)) { showFieldError('err-phone', 'field-phone'); hasError = true; }
+  if (!phone || !/^0[0-9]{8,9}$/.test(phone)) { showFieldError('err-phone', 'field-phone'); hasError = true; }
   if (hasError) return;
 
   isSubmitting = true;
