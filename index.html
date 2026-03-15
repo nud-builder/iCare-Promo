@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>iCare Battery Booking — Staff</title>
+<title>iCare Battery — Staff</title>
 <style>
 /* ─── Reset & Base ─── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -55,7 +55,7 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 .header-left .logo { font-size: 20px; }
 .header-left .branch-name { font-size: 15px; font-weight: 700; }
 .header-left .branch-id { font-size: 12px; opacity: 0.7; }
-.header-right { display: flex; align-items: center; gap: 16px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
 .notification-bell {
   position: relative; cursor: pointer; font-size: 22px;
   background: none; border: none; color: #fff; padding: 4px;
@@ -66,12 +66,18 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
   font-size: 10px; font-weight: 700; min-width: 18px; height: 18px;
   display: none; align-items: center; justify-content: center;
 }
-.btn-logout {
+.btn-settings {
   background: rgba(255,255,255,0.15); border: none; color: #fff;
+  padding: 7px 12px; border-radius: 8px; font-size: 13px; cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-settings:hover { background: rgba(255,255,255,0.25); }
+.btn-logout {
+  background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.3); color: #fff;
   padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
   transition: background 0.2s;
 }
-.btn-logout:hover { background: rgba(255,255,255,0.25); }
+.btn-logout:hover { background: rgba(255,255,255,0.2); }
 
 /* ─── Control Bar ─── */
 .control-bar {
@@ -251,18 +257,12 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
   display: none;
   font-family: 'Sarabun', 'TH SarabunNew', Arial, sans-serif;
 }
-.print-slip {
-  width: 210mm; margin: 15mm auto; padding: 15mm;
-  border: 2px solid #1a1a2e; border-radius: 8px;
-}
+.print-slip { width: 210mm; margin: 15mm auto; padding: 15mm; border: 2px solid #1a1a2e; border-radius: 8px; }
 .print-header { text-align: center; border-bottom: 2px solid #1a1a2e; padding-bottom: 12px; margin-bottom: 16px; }
 .print-header .print-campaign { font-size: 22pt; font-weight: 900; color: #1a1a2e; }
 .print-header .print-sub { font-size: 14pt; color: #555; }
 .print-header .print-branch { font-size: 13pt; color: #333; margin-top: 4px; }
-.print-queue-no {
-  text-align: center; font-size: 64pt; font-weight: 900;
-  color: #1a1a2e; line-height: 1; margin: 10px 0;
-}
+.print-queue-no { text-align: center; font-size: 64pt; font-weight: 900; color: #1a1a2e; line-height: 1; margin: 10px 0; }
 .print-queue-label { text-align: center; font-size: 14pt; color: #888; margin-bottom: 16px; }
 .print-divider { border: none; border-top: 1px dashed #aaa; margin: 14px 0; }
 .print-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13pt; }
@@ -274,11 +274,72 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 }
 .print-session-box .session-label { font-size: 20pt; font-weight: 900; }
 .print-session-box .session-time { font-size: 14pt; margin-top: 4px; opacity: 0.85; }
-.print-footer {
-  text-align: center; margin-top: 20px; font-size: 11pt;
-  color: #888; border-top: 1px solid #ddd; padding-top: 12px;
-}
+.print-footer { text-align: center; margin-top: 20px; font-size: 11pt; color: #888; border-top: 1px solid #ddd; padding-top: 12px; }
 .print-ref { font-size: 10pt; color: #aaa; margin-top: 4px; }
+
+/* ─── Settings Panel ─── */
+#settings-panel {
+  display: none; padding: 20px 24px;
+}
+.settings-section {
+  background: #fff; border-radius: 14px; padding: 20px; margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.settings-section h3 {
+  font-size: 16px; font-weight: 800; color: #1a1a2e; margin-bottom: 16px;
+  padding-bottom: 10px; border-bottom: 2px solid #f0f2f5;
+  display: flex; align-items: center; gap: 8px;
+}
+.config-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.config-table th {
+  background: #f8f9fb; padding: 10px 12px; text-align: left;
+  font-size: 12px; color: #888; font-weight: 600; border-bottom: 1px solid #e8e8e8;
+}
+.config-table td {
+  padding: 8px 12px; border-bottom: 1px solid #f5f5f5; vertical-align: middle;
+}
+.config-table tr:last-child td { border-bottom: none; }
+.config-input {
+  width: 70px; padding: 6px 10px; border: 2px solid #e8e8e8; border-radius: 8px;
+  font-size: 14px; text-align: center; outline: none; transition: border-color 0.2s;
+}
+.config-input:focus { border-color: #0f3460; }
+.config-input.holiday { background: #f5f5f5; color: #bbb; cursor: not-allowed; }
+.day-label {
+  font-size: 11px; padding: 2px 6px; border-radius: 10px;
+  background: #e8eaf6; color: #3949ab;
+}
+.day-weekend { background: #fce4ec; color: #c62828; }
+.day-holiday { background: #ffebee; color: #b71c1c; }
+.btn-save-config {
+  padding: 12px 28px; background: linear-gradient(135deg, #0f3460, #533483);
+  color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: opacity 0.2s; margin-top: 8px;
+}
+.btn-save-config:hover { opacity: 0.9; }
+.save-status {
+  font-size: 13px; margin-left: 12px; font-weight: 600;
+}
+.save-ok { color: #2e7d32; }
+.save-err { color: #d32f2f; }
+.model-toggle {
+  display: flex; align-items: center; gap: 8px;
+}
+.toggle-switch {
+  position: relative; width: 44px; height: 24px;
+}
+.toggle-switch input { display: none; }
+.toggle-slider {
+  position: absolute; inset: 0; background: #ddd; border-radius: 24px;
+  cursor: pointer; transition: background 0.2s;
+}
+.toggle-switch input:checked + .toggle-slider { background: #0f3460; }
+.toggle-slider::before {
+  content: ''; position: absolute; width: 18px; height: 18px;
+  background: #fff; border-radius: 50%; top: 3px; left: 3px;
+  transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
 </style>
 </head>
 <body>
@@ -316,6 +377,7 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
       </div>
     </div>
     <div class="header-right">
+      <button class="btn-settings" onclick="toggleSettings()" id="btn-settings-toggle">⚙️ ตั้งค่า</button>
       <button class="notification-bell" onclick="toggleNotifPanel()" title="การแจ้งเตือน">
         🔔
         <div class="notif-badge" id="notif-badge">0</div>
@@ -324,61 +386,119 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
     </div>
   </div>
 
-  <!-- Control Bar -->
-  <div class="control-bar">
-    <div class="date-picker-group">
-      <label>📅 วันที่</label>
-      <input type="date" id="date-picker" onchange="loadBookings()">
+  <!-- ─── SETTINGS PANEL ─── -->
+  <div id="settings-panel">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+      <h2 style="font-size:18px; font-weight:800; color:#1a1a2e;">⚙️ ตั้งค่าสาขา</h2>
+      <button onclick="toggleSettings()" style="background:#f0f2f5;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;">← กลับ</button>
     </div>
-    <button class="btn-refresh" onclick="loadBookings()">
-      🔄 รีเฟรช
-    </button>
-    <span class="poll-status" id="poll-status">● Live</span>
+
+    <!-- CONFIG_Slot -->
+    <div class="settings-section">
+      <h3>📅 จำนวน Slot ต่อวัน</h3>
+      <p style="font-size:13px;color:#888;margin-bottom:14px;">กำหนดจำนวนลูกค้าที่รับได้ต่อวัน (วันหยุดล็อคไว้แล้ว ไม่สามารถแก้ไขได้)</p>
+      <div id="slot-config-loading" style="text-align:center;padding:20px;color:#aaa;">กำลังโหลด...</div>
+      <div id="slot-config-container" style="display:none;">
+        <table class="config-table">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>วัน</th>
+              <th style="text-align:center;">Slot ว่าง</th>
+            </tr>
+          </thead>
+          <tbody id="slot-config-body"></tbody>
+        </table>
+        <div style="margin-top:16px; display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
+          <button class="btn-save-config" onclick="saveSlotConfig()">💾 บันทึก Slot</button>
+          <span class="save-status" id="slot-save-status"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG_Quota -->
+    <div class="settings-section">
+      <h3>📱 รุ่น iPhone ที่รับ</h3>
+      <p style="font-size:13px;color:#888;margin-bottom:14px;">เปิด/ปิดรุ่นที่สาขารับเปลี่ยน Battery (ปิด = ลูกค้าจะไม่เห็นรุ่นนี้)</p>
+      <div id="quota-config-loading" style="text-align:center;padding:20px;color:#aaa;">กำลังโหลด...</div>
+      <div id="quota-config-container" style="display:none;">
+        <table class="config-table">
+          <thead>
+            <tr>
+              <th>รุ่น iPhone</th>
+              <th style="text-align:center;">ราคา</th>
+              <th style="text-align:center;">เปิด/ปิด</th>
+              <th style="text-align:center;">จำนวนสต็อก</th>
+            </tr>
+          </thead>
+          <tbody id="quota-config-body"></tbody>
+        </table>
+        <div style="margin-top:16px; display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
+          <button class="btn-save-config" onclick="saveQuotaConfig()">💾 บันทึก Quota</button>
+          <span class="save-status" id="quota-save-status"></span>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Stats Bar -->
-  <div class="stats-bar">
-    <div class="stat-card stat-total">
-      <div class="stat-number" id="stat-total">0</div>
-      <div class="stat-label">จองทั้งหมด</div>
+  <!-- ─── QUEUE PANEL ─── -->
+  <div id="queue-panel">
+    <!-- Control Bar -->
+    <div class="control-bar">
+      <div class="date-picker-group">
+        <label>📅 วันที่</label>
+        <input type="date" id="date-picker" onchange="loadBookings()">
+      </div>
+      <button class="btn-refresh" onclick="loadBookings()">
+        🔄 รีเฟรช
+      </button>
+      <span class="poll-status" id="poll-status">● Live</span>
     </div>
-    <div class="stat-card stat-unassigned">
-      <div class="stat-number" id="stat-unassigned">0</div>
-      <div class="stat-label">ยังไม่กำหนด</div>
-    </div>
-    <div class="stat-card stat-morning">
-      <div class="stat-number" id="stat-morning">0</div>
-      <div class="stat-label">🌅 เช้า</div>
-    </div>
-    <div class="stat-card stat-afternoon">
-      <div class="stat-number" id="stat-afternoon">0</div>
-      <div class="stat-label">🌞 บ่าย</div>
-    </div>
-    <div class="stat-card stat-evening">
-      <div class="stat-number" id="stat-evening">0</div>
-      <div class="stat-label">🌆 เย็น</div>
-    </div>
-    <div class="stat-card stat-done">
-      <div class="stat-number" id="stat-done">0</div>
-      <div class="stat-label">✅ เสร็จ</div>
-    </div>
-  </div>
 
-  <!-- Filter Tabs -->
-  <div class="filter-tabs">
-    <button class="tab-btn active" onclick="setFilter('all', this)">ทั้งหมด</button>
-    <button class="tab-btn" onclick="setFilter('ยังไม่กำหนด', this)">⏳ ยังไม่กำหนด</button>
-    <button class="tab-btn" onclick="setFilter('เช้า', this)">🌅 เช้า</button>
-    <button class="tab-btn" onclick="setFilter('บ่าย', this)">🌞 บ่าย</button>
-    <button class="tab-btn" onclick="setFilter('เย็น', this)">🌆 เย็น</button>
-    <button class="tab-btn" onclick="setFilter('เสร็จ', this)">✅ เสร็จ</button>
-  </div>
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-card stat-total">
+        <div class="stat-number" id="stat-total">0</div>
+        <div class="stat-label">จองทั้งหมด</div>
+      </div>
+      <div class="stat-card stat-unassigned">
+        <div class="stat-number" id="stat-unassigned">0</div>
+        <div class="stat-label">ยังไม่กำหนด</div>
+      </div>
+      <div class="stat-card stat-morning">
+        <div class="stat-number" id="stat-morning">0</div>
+        <div class="stat-label">🌅 เช้า</div>
+      </div>
+      <div class="stat-card stat-afternoon">
+        <div class="stat-number" id="stat-afternoon">0</div>
+        <div class="stat-label">🌞 บ่าย</div>
+      </div>
+      <div class="stat-card stat-evening">
+        <div class="stat-number" id="stat-evening">0</div>
+        <div class="stat-label">🌆 เย็น</div>
+      </div>
+      <div class="stat-card stat-done">
+        <div class="stat-number" id="stat-done">0</div>
+        <div class="stat-label">✅ เสร็จ</div>
+      </div>
+    </div>
 
-  <!-- Queue List -->
-  <div class="queue-container" id="queue-container">
-    <div class="queue-empty">
-      <div class="empty-icon">📋</div>
-      กำลังโหลดข้อมูล...
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+      <button class="tab-btn active" onclick="setFilter('all', this)">ทั้งหมด</button>
+      <button class="tab-btn" onclick="setFilter('ยังไม่กำหนด', this)">⏳ ยังไม่กำหนด</button>
+      <button class="tab-btn" onclick="setFilter('เช้า', this)">🌅 เช้า</button>
+      <button class="tab-btn" onclick="setFilter('บ่าย', this)">🌞 บ่าย</button>
+      <button class="tab-btn" onclick="setFilter('เย็น', this)">🌆 เย็น</button>
+      <button class="tab-btn" onclick="setFilter('เสร็จ', this)">✅ เสร็จ</button>
+    </div>
+
+    <!-- Queue List -->
+    <div class="queue-container" id="queue-container">
+      <div class="queue-empty">
+        <div class="empty-icon">📋</div>
+        กำลังโหลดข้อมูล...
+      </div>
     </div>
   </div>
 </div>
@@ -398,14 +518,16 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 
 <script>
 // ─── CONFIG ───
-// ⚠️ เปลี่ยนเป็น URL ของ Google Apps Script ที่ Deploy แล้ว
-const API_URL = 'https://script.google.com/macros/s/AKfycbwosuHFtZllUp8yiB9mHUuw9Z2rrOMeM4bMA16NqBgqw44SOMdaHvXB7UCDO4Fh9SnQ/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyEpK7728aBIGtaIi6VtQVK_jw7KBHjp-ztZzadZAH3TmS8oaTQBWVvsDRMW0IweJvb/exec';
 
 const SESSIONS = {
   'เช้า':  { time: '11:00 – 13:00 น.', start: '11:00', icon: '🌅' },
   'บ่าย':  { time: '13:00 – 16:00 น.', start: '13:00', icon: '🌞' },
   'เย็น':  { time: '16:00 – 19:00 น.', start: '16:00', icon: '🌆' }
 };
+
+const TH_DAYS = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+const TH_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 
 // ─── State ───
 let currentBranch = null;
@@ -416,6 +538,8 @@ let pollInterval = null;
 let lastTimestamp = null;
 let newCount = 0;
 const newCardRefs = new Set();
+let settingsVisible = false;
+let branchFullConfig = null;
 
 // ─── API ───
 async function apiCall(action, params = {}) {
@@ -488,7 +612,6 @@ function showMainApp() {
   document.getElementById('header-branch-name').textContent = currentBranch.name;
   document.getElementById('header-branch-id').textContent = 'Branch ' + currentBranch.id;
 
-  // Set default date to today
   const today = new Date();
   const dateStr = today.toISOString().split('T')[0];
   document.getElementById('date-picker').value = dateStr;
@@ -553,7 +676,6 @@ function renderQueue() {
 
 function renderCard(b) {
   const isNew = newCardRefs.has(b.bookingRef);
-  const sessionClass = b.session ? `selected-${b.session}` : '';
   const sourceBadge = b.source === 'online'
     ? '<span class="customer-source source-online">🌐 Online</span>'
     : '<span class="customer-source source-walk-in">🏪 Walk-in</span>';
@@ -567,7 +689,9 @@ function renderCard(b) {
     </button>
   `).join('');
 
-  const price = b.price ? `฿${Number(b.price).toLocaleString()}` : '—';
+  const regTime = b.timestamp
+    ? new Date(b.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+    : '—';
 
   return `
     <div class="queue-card status-${b.status} ${isNew ? 'new-card' : ''}" id="card-${b.bookingRef}">
@@ -582,8 +706,7 @@ function renderCard(b) {
       </div>
       <div class="card-model">
         <span class="model-badge">📱 ${b.model}</span>
-        <span class="price-badge">฿${b.price ? Number(b.price).toLocaleString() : '—'}</span>
-        <span class="booking-date">📅 ${formatDate(b.bookingDate)}</span>
+        <span class="booking-date">🕐 ลงทะเบียน ${regTime} น.</span>
       </div>
       <div class="session-group">${sessionBtns}</div>
       <div class="action-group">
@@ -596,7 +719,7 @@ function renderCard(b) {
           ❌ ยกเลิก
         </button>
         <button class="btn-print" onclick="doPrint(${JSON.stringify(b).replace(/"/g, '&quot;')})">
-          🖨️ พิมพ์ใบจอง
+          🖨️ พิมพ์
         </button>
       </div>
     </div>
@@ -607,16 +730,12 @@ function getStatusDot(status) {
   return { 'รอ': '🟡', 'ยืนยัน': '🔵', 'เสร็จ': '🟢', 'ยกเลิก': '⚪' }[status] || '⚪';
 }
 
-function formatDate(d) {
-  if (!d) return '—';
-  const dt = new Date(d + 'T12:00:00');
-  return dt.toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: '2-digit' });
-}
-
 // ─── ASSIGN SESSION ───
 async function doAssignSession(bookingRef, session, btn) {
+  // serviceDate = วันที่เลือกใน date picker (วันให้บริการ)
+  const serviceDate = document.getElementById('date-picker').value;
   try {
-    const result = await apiCall('assignSession', { bookingRef, session, staffName: 'Staff' });
+    const result = await apiCall('assignSession', { bookingRef, session, staffName: currentBranch.name, serviceDate });
     if (result.success) {
       const idx = allBookings.findIndex(b => b.bookingRef === bookingRef);
       if (idx !== -1) {
@@ -674,7 +793,7 @@ function setFilter(filter, btn) {
 // ─── POLLING / NOTIFICATION ───
 function startPolling() {
   if (pollInterval) clearInterval(pollInterval);
-  pollInterval = setInterval(pollNewBookings, 10000); // every 10 seconds
+  pollInterval = setInterval(pollNewBookings, 10000);
   document.getElementById('poll-status').innerHTML = '🟢 Live';
 }
 
@@ -683,7 +802,10 @@ async function pollNewBookings() {
     const result = await apiCall('getNewBookings', { lastTimestamp });
     if (result.success && result.newBookings.length > 0) {
       const today = document.getElementById('date-picker').value;
-      const todayNew = result.newBookings.filter(b => b.bookingDate === today);
+      const todayNew = result.newBookings.filter(b => {
+        const regDate = b.timestamp ? b.timestamp.split('T')[0] : '';
+        return regDate === today;
+      });
 
       todayNew.forEach(b => {
         if (!allBookings.find(x => x.bookingRef === b.bookingRef)) {
@@ -698,12 +820,8 @@ async function pollNewBookings() {
         renderQueue();
         updateStatsFromBookings();
         todayNew.forEach(b => {
-          const isToday = b.bookingDate === today;
-          showToast(
-            '🔔',
-            `ลูกค้าใหม่! คิว #${b.queueNo}`,
-            `${b.firstName} ${b.lastName} — ${b.model}${isToday ? '\n⚡ เรียกเข้าเคาน์เตอร์ได้เลย' : ''}`
-          );
+          showToast('🔔', `ลูกค้าใหม่! คิว #${b.queueNo}`,
+            `${b.firstName} ${b.lastName} — ${b.model}`);
         });
         playNotificationSound();
         addNotifCount(todayNew.length);
@@ -743,8 +861,7 @@ function addNotifCount(n) {
 
 function toggleNotifPanel() {
   newCount = 0;
-  const badge = document.getElementById('notif-badge');
-  badge.style.display = 'none';
+  document.getElementById('notif-badge').style.display = 'none';
   updatePageTitle();
 }
 
@@ -763,11 +880,14 @@ function showToast(icon, title, sub) {
     <div class="toast-icon">${icon}</div>
     <div class="toast-body">
       <div class="toast-title">${title}</div>
-      <div class="toast-sub">${sub.replace(/\n/g, '<br>')}</div>
+      <div class="toast-sub">${String(sub).replace(/\n/g, '<br>')}</div>
     </div>
   `;
   container.appendChild(toast);
-  setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s'; setTimeout(() => toast.remove(), 500); }, 5000);
+  setTimeout(() => {
+    toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s';
+    setTimeout(() => toast.remove(), 500);
+  }, 5000);
 }
 
 // ─── PRINT ───
@@ -782,7 +902,7 @@ function doPrint(booking) {
        </div>`
     : `<div class="print-session-box" style="background:#f57f17">
         <div class="session-label">⏳ ยังไม่กำหนด Session</div>
-        <div class="session-time">กรุณาติดต่อพนักงาน</div>
+        <div class="session-time">กรุณารอพนักงานแจ้ง</div>
        </div>`;
 
   document.getElementById('print-slip-content').innerHTML = `
@@ -797,16 +917,11 @@ function doPrint(booking) {
     <div class="print-row"><span class="label">ชื่อ-นามสกุล</span><span class="value">${booking.firstName} ${booking.lastName}</span></div>
     <div class="print-row"><span class="label">เบอร์โทรศัพท์</span><span class="value">${booking.phone}</span></div>
     <div class="print-row"><span class="label">รุ่น iPhone</span><span class="value">${booking.model}</span></div>
-    <div class="print-row"><span class="label">ราคา Battery</span><span class="value">฿${booking.price ? Number(booking.price).toLocaleString() : '—'}</span></div>
-    <div class="print-row"><span class="label">วันที่จอง</span><span class="value">${formatDate(booking.bookingDate)}</span></div>
     ${sessionBlock}
     <hr class="print-divider">
-    <div class="print-footer">
-      ขอบคุณที่ใช้บริการ iCare — กรุณาแสดงใบนี้แก่พนักงาน
-    </div>
+    <div class="print-footer">ขอบคุณที่ใช้บริการ iCare — กรุณาแสดงใบนี้แก่พนักงาน</div>
     <div class="print-ref">Ref: ${booking.bookingRef}</div>
   `;
-
   window.print();
 }
 
@@ -815,14 +930,179 @@ function showLoading(show) {
   document.getElementById('loading').style.display = show ? 'flex' : 'none';
 }
 
+// ─── SETTINGS PANEL ───
+async function toggleSettings() {
+  settingsVisible = !settingsVisible;
+  document.getElementById('settings-panel').style.display = settingsVisible ? 'block' : 'none';
+  document.getElementById('queue-panel').style.display = settingsVisible ? 'none' : 'block';
+  document.getElementById('btn-settings-toggle').textContent = settingsVisible ? '← คิว' : '⚙️ ตั้งค่า';
+
+  if (settingsVisible && !branchFullConfig) {
+    await loadBranchConfig();
+  }
+}
+
+async function loadBranchConfig() {
+  document.getElementById('slot-config-loading').style.display = 'block';
+  document.getElementById('quota-config-loading').style.display = 'block';
+  document.getElementById('slot-config-container').style.display = 'none';
+  document.getElementById('quota-config-container').style.display = 'none';
+
+  try {
+    const result = await apiCall('getBranchFullConfig');
+    if (!result.success) {
+      document.getElementById('slot-config-loading').textContent = '❌ ' + result.error;
+      document.getElementById('quota-config-loading').textContent = '❌ ' + result.error;
+      return;
+    }
+
+    branchFullConfig = result;
+    renderSlotConfig(result.slotConfig);
+    renderQuotaConfig(result.quotaConfig);
+
+    document.getElementById('slot-config-loading').style.display = 'none';
+    document.getElementById('quota-config-loading').style.display = 'none';
+    document.getElementById('slot-config-container').style.display = 'block';
+    document.getElementById('quota-config-container').style.display = 'block';
+  } catch(e) {
+    document.getElementById('slot-config-loading').textContent = '❌ โหลดข้อมูลล้มเหลว';
+    document.getElementById('quota-config-loading').textContent = '❌ โหลดข้อมูลล้มเหลว';
+  }
+}
+
+function renderSlotConfig(slotConfig) {
+  const tbody = document.getElementById('slot-config-body');
+  if (!slotConfig || slotConfig.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#aaa;padding:20px;">ไม่มีข้อมูล Slot</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = slotConfig.map(s => {
+    const dt = new Date(s.date + 'T12:00:00');
+    const dayNum = dt.getDay();
+    const isWeekend = dayNum === 0 || dayNum === 6;
+    const dayClass = s.isHoliday ? 'day-holiday' : (isWeekend ? 'day-weekend' : '');
+    const dayLabel = s.isHoliday ? '🚫 หยุด' : TH_DAYS[dayNum];
+    const dateDisplay = `${dt.getDate()} ${TH_MONTHS[dt.getMonth()]} ${dt.getFullYear() + 543 - 2000 + 43}`;
+
+    return `<tr>
+      <td>${dateDisplay}</td>
+      <td><span class="day-label ${dayClass}">${dayLabel}</span></td>
+      <td style="text-align:center;">
+        ${s.isHoliday
+          ? '<input class="config-input holiday" value="🚫" disabled>'
+          : `<input class="config-input" type="number" min="0" max="999"
+               data-date="${s.date}" value="${s.slots}" placeholder="0">`
+        }
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderQuotaConfig(quotaConfig) {
+  const tbody = document.getElementById('quota-config-body');
+  if (!quotaConfig || quotaConfig.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px;">ไม่มีข้อมูล Model</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = quotaConfig.map((q, idx) => {
+    const enabled = q.quota > 0;
+    return `<tr>
+      <td>${q.model}</td>
+      <td style="text-align:center;">฿${Number(q.price).toLocaleString()}</td>
+      <td style="text-align:center;">
+        <label class="toggle-switch">
+          <input type="checkbox" id="quota-toggle-${idx}" data-model="${q.model}"
+            ${enabled ? 'checked' : ''}
+            onchange="onQuotaToggle(${idx})">
+          <span class="toggle-slider"></span>
+        </label>
+      </td>
+      <td style="text-align:center;">
+        <input class="config-input" type="number" min="0" max="9999"
+          id="quota-input-${idx}" data-model="${q.model}"
+          value="${q.quota}" placeholder="0"
+          ${!enabled ? 'disabled style="opacity:0.4"' : ''}>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function onQuotaToggle(idx) {
+  const checkbox = document.getElementById(`quota-toggle-${idx}`);
+  const input = document.getElementById(`quota-input-${idx}`);
+  if (checkbox.checked) {
+    input.disabled = false;
+    input.style.opacity = '1';
+    if (!input.value || input.value === '0') input.value = '1';
+  } else {
+    input.disabled = true;
+    input.style.opacity = '0.4';
+    input.value = '0';
+  }
+}
+
+async function saveSlotConfig() {
+  const inputs = document.querySelectorAll('#slot-config-body input[data-date]');
+  const slots = [];
+  inputs.forEach(input => {
+    slots.push({ date: input.dataset.date, value: parseInt(input.value) || 0 });
+  });
+
+  const statusEl = document.getElementById('slot-save-status');
+  statusEl.textContent = '⏳ กำลังบันทึก...';
+  statusEl.className = 'save-status';
+
+  try {
+    const result = await apiCall('setConfig', { slots, quotas: [] });
+    if (result.success) {
+      statusEl.textContent = `✅ บันทึกแล้ว (${result.slotsUpdated} วัน)`;
+      statusEl.className = 'save-status save-ok';
+      branchFullConfig = null; // reset cache
+    } else {
+      statusEl.textContent = '❌ ' + result.error;
+      statusEl.className = 'save-status save-err';
+    }
+  } catch(e) {
+    statusEl.textContent = '❌ เชื่อมต่อไม่ได้';
+    statusEl.className = 'save-status save-err';
+  }
+}
+
+async function saveQuotaConfig() {
+  const inputs = document.querySelectorAll('#quota-config-body input[data-model][type="number"]');
+  const quotas = [];
+  inputs.forEach(input => {
+    quotas.push({ model: input.dataset.model, value: parseInt(input.value) || 0 });
+  });
+
+  const statusEl = document.getElementById('quota-save-status');
+  statusEl.textContent = '⏳ กำลังบันทึก...';
+  statusEl.className = 'save-status';
+
+  try {
+    const result = await apiCall('setConfig', { slots: [], quotas });
+    if (result.success) {
+      statusEl.textContent = `✅ บันทึกแล้ว (${result.quotasUpdated} รุ่น)`;
+      statusEl.className = 'save-status save-ok';
+      branchFullConfig = null; // reset cache
+    } else {
+      statusEl.textContent = '❌ ' + result.error;
+      statusEl.className = 'save-status save-err';
+    }
+  } catch(e) {
+    statusEl.textContent = '❌ เชื่อมต่อไม่ได้';
+    statusEl.className = 'save-status save-err';
+  }
+}
+
 // ─── AUTO-RESTORE SESSION ───
 window.onload = () => {
-  // Enter key on login
   document.getElementById('input-password').addEventListener('keydown', e => {
     if (e.key === 'Enter') doLogin();
   });
 
-  // Try restore session
   const saved = localStorage.getItem('icare_branch');
   if (saved) {
     try {
