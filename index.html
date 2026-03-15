@@ -252,30 +252,50 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
   body > *:not(#print-area) { display: none !important; }
   #print-area { display: block !important; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page { size: A4 portrait; margin: 12mm 14mm; }
 }
 #print-area {
   display: none;
-  font-family: 'Sarabun', 'TH SarabunNew', Arial, sans-serif;
+  font-family: 'Sarabun', 'TH SarabunNew', 'Angsana New', Arial, sans-serif;
+  font-size: 10pt;
 }
-.print-slip { width: 210mm; margin: 15mm auto; padding: 15mm; border: 2px solid #1a1a2e; border-radius: 8px; }
-.print-header { text-align: center; border-bottom: 2px solid #1a1a2e; padding-bottom: 12px; margin-bottom: 16px; }
-.print-header .print-campaign { font-size: 22pt; font-weight: 900; color: #1a1a2e; }
-.print-header .print-sub { font-size: 14pt; color: #555; }
-.print-header .print-branch { font-size: 13pt; color: #333; margin-top: 4px; }
-.print-queue-no { text-align: center; font-size: 64pt; font-weight: 900; color: #1a1a2e; line-height: 1; margin: 10px 0; }
-.print-queue-label { text-align: center; font-size: 14pt; color: #888; margin-bottom: 16px; }
-.print-divider { border: none; border-top: 1px dashed #aaa; margin: 14px 0; }
-.print-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13pt; }
-.print-row .label { color: #555; }
-.print-row .value { font-weight: 700; color: #1a1a2e; }
-.print-session-box {
-  margin: 16px 0; background: #1a1a2e; color: #fff;
-  border-radius: 8px; padding: 14px; text-align: center;
+.print-doc { width: 182mm; margin: 0 auto; }
+/* Logo row */
+.print-logo-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.print-brand { font-size: 26pt; font-weight: 900; color: #1a1a2e; letter-spacing: -1px; line-height: 1; }
+.print-brand-sub { font-size: 8.5pt; color: #555; margin-top: 2px; }
+.print-doc-info { text-align: right; font-size: 8.5pt; color: #555; line-height: 1.6; }
+/* Title bar */
+.print-title-bar {
+  background: #1a1a2e; color: #fff;
+  padding: 9px 14px; margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: center;
 }
-.print-session-box .session-label { font-size: 20pt; font-weight: 900; }
-.print-session-box .session-time { font-size: 14pt; margin-top: 4px; opacity: 0.85; }
-.print-footer { text-align: center; margin-top: 20px; font-size: 11pt; color: #888; border-top: 1px solid #ddd; padding-top: 12px; }
-.print-ref { font-size: 10pt; color: #aaa; margin-top: 4px; }
+.print-title-main { font-size: 15pt; font-weight: 900; }
+.print-title-sub { font-size: 9pt; opacity: 0.8; text-align: right; }
+/* Info tables */
+.print-info-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 9.5pt; }
+.print-info-table th {
+  background: #f0f2f5; padding: 5px 8px; text-align: left;
+  font-weight: 700; border: 1px solid #999; width: 36%;
+}
+.print-info-table td { border: 1px solid #999; padding: 5px 8px; }
+.print-info-table tr.highlight th { background: #fff3cd; }
+.print-info-table tr.highlight td { background: #fff3cd; font-weight: 700; }
+/* Conditions */
+.print-cond-title {
+  font-size: 10pt; font-weight: 800;
+  padding: 5px 0 4px; border-bottom: 1.5px solid #1a1a2e; margin-bottom: 5px;
+}
+.print-cond-item { display: flex; gap: 5px; font-size: 8.5pt; padding: 2px 0; line-height: 1.4; }
+.print-cond-num { min-width: 16px; font-weight: 700; flex-shrink: 0; }
+/* Signatures */
+.print-sig-row { display: flex; gap: 12px; margin-top: 12px; }
+.print-sig-box { flex: 1; border: 1px solid #999; padding: 8px 10px; }
+.print-sig-label { font-size: 9.5pt; font-weight: 700; margin-bottom: 28px; }
+.print-sig-underline { border-top: 1px solid #666; font-size: 8.5pt; color: #777; padding-top: 4px; margin-top: 6px; }
+/* Footer */
+.print-doc-footer { margin-top: 8px; border-top: 1px solid #ddd; padding-top: 5px; text-align: center; font-size: 8pt; color: #888; }
 
 /* ─── Settings Panel ─── */
 #settings-panel {
@@ -500,8 +520,14 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
     <!-- Control Bar -->
     <div class="control-bar">
       <div class="date-picker-group">
-        <label>📅 วันที่</label>
+        <label>📋 วันดูคิว</label>
         <input type="date" id="date-picker" onchange="loadBookings()">
+      </div>
+      <div class="date-picker-group" style="border-left:2px solid #e0e0e0; padding-left:16px;">
+        <label style="color:#e65100; font-weight:700;">📅 วันให้บริการ</label>
+        <input type="date" id="service-date-picker"
+          style="border-color:#e65100; background:#fff8f4;"
+          onchange="loadSlotForServiceDate()">
       </div>
       <span class="slot-chip" id="slot-info-chip" style="display:none;">📊 Slot: —</span>
       <button class="btn-refresh" onclick="loadBookings()">
@@ -560,7 +586,7 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 
 <!-- ─── PRINT AREA ─── -->
 <div id="print-area">
-  <div class="print-slip" id="print-slip-content"></div>
+  <div id="print-slip-content"></div>
 </div>
 
 <!-- ─── TOAST CONTAINER ─── -->
@@ -671,6 +697,7 @@ function showMainApp() {
   const today = new Date();
   const dateStr = today.toISOString().split('T')[0];
   document.getElementById('date-picker').value = dateStr;
+  document.getElementById('service-date-picker').value = dateStr;
 
   lastTimestamp = new Date().toISOString();
   loadBookings();
@@ -701,6 +728,22 @@ async function loadBookings() {
     showToast('⚠️', 'ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้');
   } finally {
     showLoading(false);
+  }
+}
+
+// ─── LOAD SLOT FOR SERVICE DATE (แยกจาก date-picker) ───
+async function loadSlotForServiceDate() {
+  const serviceDate = document.getElementById('service-date-picker').value;
+  if (!serviceDate) return;
+  try {
+    const statsResult = await apiCall('getSlotSummary', { date: serviceDate });
+    if (statsResult.success) {
+      currentSessionQuotas = statsResult.sessionQuotas || {};
+      updateStats(statsResult.counts, statsResult.totalSlots);
+      renderQueue(); // re-render session buttons ให้แสดง quota ของ service date
+    }
+  } catch(e) {
+    // silent fail
   }
 }
 
@@ -830,8 +873,9 @@ function getStatusDot(status) {
 
 // ─── ASSIGN SESSION ───
 async function doAssignSession(bookingRef, session, btn) {
-  // serviceDate = วันที่เลือกใน date picker (วันให้บริการ)
-  const serviceDate = document.getElementById('date-picker').value;
+  // serviceDate = วันที่ใน service-date-picker (วันให้บริการ) ถ้าไม่ได้เลือก ใช้ date-picker แทน
+  const serviceDate = document.getElementById('service-date-picker').value
+    || document.getElementById('date-picker').value;
   try {
     const result = await apiCall('assignSession', { bookingRef, session, staffName: currentBranch.name, serviceDate });
     if (result.success) {
@@ -992,33 +1036,139 @@ function showToast(icon, title, sub) {
 function doPrint(booking) {
   const session = booking.session;
   const sessionInfo = session ? SESSIONS[session] : null;
-  const sessionBlock = sessionInfo
-    ? `<div class="print-session-box">
-        <div class="session-label">${sessionInfo.icon} Session ${session}</div>
-        <div class="session-time">กรุณาเข้าเคาน์เตอร์เวลา ${sessionInfo.start} น.</div>
-        <div class="session-time">(${sessionInfo.time})</div>
-       </div>`
-    : `<div class="print-session-box" style="background:#f57f17">
-        <div class="session-label">⏳ ยังไม่กำหนด Session</div>
-        <div class="session-time">กรุณารอพนักงานแจ้ง</div>
-       </div>`;
+
+  // วันที่เอกสาร (today)
+  const today = new Date();
+  const todayDisplay = `${today.getDate()} ${TH_MONTHS[today.getMonth()]} ${today.getFullYear() + 543}`;
+
+  // Booking Date (วันนัดบริการ จาก column J)
+  let bookingDateDisplay = booking.bookingDate || '—';
+  if (booking.bookingDate) {
+    const bd = new Date(booking.bookingDate + 'T12:00:00');
+    if (!isNaN(bd)) {
+      bookingDateDisplay = `${bd.getDate()} ${TH_MONTHS[bd.getMonth()]} ${bd.getFullYear() + 543}`;
+    }
+  }
+  // เพิ่ม session ถ้ามี
+  const sessionSuffix = sessionInfo
+    ? ` — ${sessionInfo.icon} ${session} (${sessionInfo.time})`
+    : (session ? ` — ${session}` : '');
+
+  // ราคา Battery จาก quotaConfig (ถ้ามี)
+  let priceDisplay = '—';
+  if (branchFullConfig && branchFullConfig.quotaConfig) {
+    const q = branchFullConfig.quotaConfig.find(x => x.model === booking.model);
+    if (q && q.price) priceDisplay = '฿' + Number(q.price).toLocaleString();
+  }
+
+  // เบอร์สาขา
+  const branchPhone = (currentBranch && currentBranch.phone) ? currentBranch.phone : '—';
 
   document.getElementById('print-slip-content').innerHTML = `
-    <div class="print-header">
-      <div class="print-campaign">🔋 Final Call Battery 2025</div>
-      <div class="print-sub">iCare — Apple Authorized Service Provider</div>
-      <div class="print-branch">สาขา: ${currentBranch.name}</div>
+    <div class="print-doc">
+
+      <!-- Logo + Doc Info -->
+      <div class="print-logo-row">
+        <div>
+          <div class="print-brand">iCare</div>
+          <div class="print-brand-sub">Apple Authorized Service Provider</div>
+        </div>
+        <div class="print-doc-info">
+          <div>วันที่เอกสาร: <strong>${todayDisplay}</strong></div>
+          <div>Booking Ref: <strong>${booking.bookingRef}</strong></div>
+          <div>หมายเลขคิว: <strong style="font-size:11pt;">${String(booking.queueNo).padStart(3,'0')}</strong></div>
+        </div>
+      </div>
+
+      <!-- Title Bar -->
+      <div class="print-title-bar">
+        <div class="print-title-main">Final Call Battery 2025</div>
+        <div class="print-title-sub">Booking Confirmation<br>ใบยืนยันการจอง</div>
+      </div>
+
+      <!-- Branch Info -->
+      <table class="print-info-table">
+        <tr>
+          <th>หมายเลขสาขา</th>
+          <td style="width:16%">${currentBranch.id}</td>
+          <th style="width:28%">หมายเลขโทรศัพท์ติดต่อสาขา</th>
+          <td>${branchPhone}</td>
+        </tr>
+        <tr>
+          <th>สาขาที่เข้าใช้บริการ</th>
+          <td colspan="3" style="font-weight:700;">${currentBranch.name}</td>
+        </tr>
+      </table>
+
+      <!-- Booking Details -->
+      <table class="print-info-table">
+        <tr>
+          <th>ชื่อ (First Name)</th>
+          <td>${booking.firstName}</td>
+        </tr>
+        <tr>
+          <th>นามสกุล (Last Name)</th>
+          <td>${booking.lastName}</td>
+        </tr>
+        <tr>
+          <th>เบอร์โทรศัพท์</th>
+          <td>${booking.phone}</td>
+        </tr>
+        <tr>
+          <th>E-Mail</th>
+          <td>${booking.email || '—'}</td>
+        </tr>
+        <tr class="highlight">
+          <th>รุ่น iPhone (Model)</th>
+          <td style="font-size:11pt;">${booking.model}</td>
+        </tr>
+        <tr>
+          <th>ราคา Battery</th>
+          <td style="font-weight:700;">${priceDisplay}</td>
+        </tr>
+        <tr class="highlight">
+          <th>Booking Date / วันให้บริการ</th>
+          <td>${bookingDateDisplay}${sessionSuffix}</td>
+        </tr>
+      </table>
+
+      <!-- Conditions -->
+      <div>
+        <div class="print-cond-title">เงื่อนไขการเข้าใช้บริการ (Terms &amp; Conditions)</div>
+        <div class="print-cond-item"><span class="print-cond-num">1.</span><span>เอกสารฉบับนี้เป็นใบการจองเข้ารับการเปลี่ยน Battery เท่านั้น</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">2.</span><span>ในกระบวนการเปลี่ยนแบตเตอรี่ จำเป็นต้องทำการลอกฟิล์มกันรอยหน้าจอออก เสียฟิล์มไป</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">3.</span><span>ในวันที่เข้ารับการเปลี่ยน จำเป็นต้องปิดใช้งาน FMiP ก่อน และแนะนำให้ลูกค้าสำรองข้อมูลมาก่อนวันนัด</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">4.</span><span>ลูกค้าสามารถเข้ามารับบริการได้ ตามรุ่น และวันที่ ที่ได้เลือกไว้</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">5.</span><span>กรณีที่ลูกค้าเข้ามา หลังจากเลย Booking Date ที่ได้จองไว้ อาจต้องใช้เวลาในการจัดหาให้และติดต่อในภายหลัง</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">6.</span><span>ในวันที่เข้ามาดำเนินการเปลี่ยน พนักงานจะมีการตรวจเช็คเครื่องอีกครั้ง หากตรวจพบสภาพเครื่องที่ไม่สามารถเปลี่ยนให้ได้ จะดำเนินการคืนเงินตามจำนวนที่ลูกค้าชำระไว้ ณ วันจอง โดยใช้เวลาประมาณ 45 วัน หลังจากได้รับเอกสารจากลูกค้าครบถ้วน</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">7.</span><span>ไม่สามารถดำเนินการคืนเงินที่ได้ชำระไว้ ในกรณีที่ลูกค้าต้องการยกเลิกการจอง</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">8.</span><span>แบตเตอรี่ที่ได้รับการเปลี่ยนไป จะมีการรับประกันเฉพาะตัวแบตเตอรี่ 90 วัน</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">9.</span><span>ลูกค้าสามารถทำการรับบริการ ได้ที่สาขาที่ได้ทำเรื่องจองไว้เท่านั้น</span></div>
+      </div>
+
+      <!-- Signatures -->
+      <div class="print-sig-row">
+        <div class="print-sig-box">
+          <div class="print-sig-label">พนักงาน เซ็น รับจองสิทธิ์</div>
+          <div class="print-sig-underline">ลายเซ็น: _______________________________</div>
+          <div class="print-sig-underline">ชื่อ-นามสกุล: ___________________________</div>
+          <div class="print-sig-underline">วันที่: __________________________________</div>
+        </div>
+        <div class="print-sig-box">
+          <div class="print-sig-label">ลูกค้า เซ็น รับทราบเงื่อนไข</div>
+          <div class="print-sig-underline">ลายเซ็น: _______________________________</div>
+          <div class="print-sig-underline">ชื่อ-นามสกุล: ___________________________</div>
+          <div class="print-sig-underline">วันที่: __________________________________</div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="print-doc-footer">
+        iCare Apple Authorized Service Provider &nbsp;|&nbsp; สาขา ${currentBranch.name}
+        &nbsp;|&nbsp; Booking Ref: ${booking.bookingRef}
+      </div>
+
     </div>
-    <div class="print-queue-no">${String(booking.queueNo).padStart(3,'0')}</div>
-    <div class="print-queue-label">หมายเลขคิว</div>
-    <hr class="print-divider">
-    <div class="print-row"><span class="label">ชื่อ-นามสกุล</span><span class="value">${booking.firstName} ${booking.lastName}</span></div>
-    <div class="print-row"><span class="label">เบอร์โทรศัพท์</span><span class="value">${booking.phone}</span></div>
-    <div class="print-row"><span class="label">รุ่น iPhone</span><span class="value">${booking.model}</span></div>
-    ${sessionBlock}
-    <hr class="print-divider">
-    <div class="print-footer">ขอบคุณที่ใช้บริการ iCare — กรุณาแสดงใบนี้แก่พนักงาน</div>
-    <div class="print-ref">Ref: ${booking.bookingRef}</div>
   `;
   window.print();
 }
