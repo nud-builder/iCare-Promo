@@ -267,21 +267,21 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 .print-doc-info { text-align: right; font-size: 8.5pt; color: #555; line-height: 1.6; }
 /* Title bar */
 .print-title-bar {
-  background: #1a1a2e; color: #fff;
+  border: 2px solid #1a1a2e; color: #1a1a2e; background: #fff;
   padding: 9px 14px; margin-bottom: 8px;
   display: flex; justify-content: space-between; align-items: center;
 }
 .print-title-main { font-size: 15pt; font-weight: 900; }
-.print-title-sub { font-size: 9pt; opacity: 0.8; text-align: right; }
+.print-title-sub { font-size: 9pt; text-align: right; font-weight: 600; }
 /* Info tables */
 .print-info-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 9.5pt; }
 .print-info-table th {
-  background: #f0f2f5; padding: 5px 8px; text-align: left;
+  background: #fff; padding: 5px 8px; text-align: left;
   font-weight: 700; border: 1px solid #999; width: 36%;
 }
-.print-info-table td { border: 1px solid #999; padding: 5px 8px; }
-.print-info-table tr.highlight th { background: #fff3cd; }
-.print-info-table tr.highlight td { background: #fff3cd; font-weight: 700; }
+.print-info-table td { border: 1px solid #999; padding: 5px 8px; background: #fff; }
+.print-info-table tr.highlight th { background: #fff; font-weight: 800; text-decoration: underline; }
+.print-info-table tr.highlight td { background: #fff; font-weight: 800; }
 /* Conditions */
 .print-cond-title {
   font-size: 10pt; font-weight: 800;
@@ -291,9 +291,8 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 .print-cond-num { min-width: 16px; font-weight: 700; flex-shrink: 0; }
 /* Signatures */
 .print-sig-row { display: flex; gap: 12px; margin-top: 12px; }
-.print-sig-box { flex: 1; border: 1px solid #999; padding: 8px 10px; }
-.print-sig-label { font-size: 9.5pt; font-weight: 700; margin-bottom: 28px; }
-.print-sig-underline { border-top: 1px solid #666; font-size: 8.5pt; color: #777; padding-top: 4px; margin-top: 6px; }
+.print-sig-box { flex: 1; border: 1px solid #999; padding: 10px 12px; min-height: 72px; background: #fff; }
+.print-sig-label { font-size: 9.5pt; font-weight: 700; margin-bottom: 0; }
 /* Footer */
 .print-doc-footer { margin-top: 8px; border-top: 1px solid #ddd; padding-top: 5px; text-align: center; font-size: 8pt; color: #888; }
 
@@ -527,7 +526,7 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
         <label style="color:#e65100; font-weight:700;">📅 วันให้บริการ</label>
         <input type="date" id="service-date-picker"
           style="border-color:#e65100; background:#fff8f4;"
-          onchange="loadSlotForServiceDate()">
+          onchange="loadBookings()">
       </div>
       <span class="slot-chip" id="slot-info-chip" style="display:none;">📊 Slot: —</span>
       <button class="btn-refresh" onclick="loadBookings()">
@@ -567,7 +566,10 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
     <!-- Filter Tabs -->
     <div class="filter-tabs">
       <button class="tab-btn active" onclick="setFilter('all', this)">ทั้งหมด</button>
-      <button class="tab-btn" onclick="setFilter('ยังไม่กำหนด', this)">⏳ ยังไม่กำหนด</button>
+      <button class="tab-btn" onclick="setFilter('unassigned', this)" id="tab-unassigned">
+        ⏳ ยังไม่กำหนดวัน
+        <span id="unassigned-count-badge" style="display:none;background:#ff9800;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;font-weight:700;"></span>
+      </button>
       <button class="tab-btn" onclick="setFilter('เช้า', this)">🌅 เช้า</button>
       <button class="tab-btn" onclick="setFilter('บ่าย', this)">🌞 บ่าย</button>
       <button class="tab-btn" onclick="setFilter('เย็น', this)">🌆 เย็น</button>
@@ -599,7 +601,7 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 
 <script>
 // ─── CONFIG ───
-const API_URL = 'https://script.google.com/macros/s/AKfycbyEpK7728aBIGtaIi6VtQVK_jw7KBHjp-ztZzadZAH3TmS8oaTQBWVvsDRMW0IweJvb/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwz_WK50D-RnJ2KOk-NtWeymHKseu77UZHNkP1czjy9T4qTFrQsPKJEyJX0qyXECyGp/exec';
 
 const SESSIONS = {
   'เช้า':  { time: '11:00 – 13:00 น.', start: '11:00', icon: '🌅' },
@@ -613,7 +615,8 @@ const TH_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.',
 // ─── State ───
 let currentBranch = null;
 let currentPassword = null;
-let allBookings = [];
+let allBookings = [];            // bookings ที่ match service date ที่เลือก (column J)
+let allUnassignedBookings = [];  // bookings ที่ column J ว่าง (ยังไม่กำหนดวัน)
 let currentFilter = 'all';
 let pollInterval = null;
 let lastTimestamp = null;
@@ -681,6 +684,7 @@ function doLogout() {
   currentBranch = null;
   currentPassword = null;
   allBookings = [];
+  allUnassignedBookings = [];
   if (pollInterval) clearInterval(pollInterval);
   document.getElementById('main-app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
@@ -705,45 +709,35 @@ function showMainApp() {
 }
 
 // ─── LOAD BOOKINGS ───
+// Single API call: getBookings(filterBy:'serviceDate') คืน bookings + unassigned + slotSummary
+// ลดจาก 2 calls เหลือ 1 call → รองรับ 40+ สาขาพร้อมกัน
 async function loadBookings() {
-  const date = document.getElementById('date-picker').value;
-  if (!date) return;
+  const serviceDate = document.getElementById('service-date-picker').value;
+  if (!serviceDate) return;
 
   showLoading(true);
   try {
-    const [bookResult, statsResult] = await Promise.all([
-      apiCall('getBookings', { date }),
-      apiCall('getSlotSummary', { date })
-    ]);
+    const result = await apiCall('getBookings', { date: serviceDate, filterBy: 'serviceDate' });
 
-    if (statsResult.success) {
-      currentSessionQuotas = statsResult.sessionQuotas || {};
-      updateStats(statsResult.counts, statsResult.totalSlots);
-    }
-    if (bookResult.success) {
-      allBookings = bookResult.bookings;
+    if (result.success) {
+      allBookings          = result.bookings   || [];
+      allUnassignedBookings = result.unassigned || [];
+
+      if (result.slotSummary) {
+        currentSessionQuotas = result.slotSummary.sessionQuotas || {};
+        // ใช้ unassigned count จริงๆ แทน counts.ยังไม่กำหนด (ที่นับเฉพาะ service date)
+        const counts = Object.assign({}, result.slotSummary.counts,
+          { ยังไม่กำหนด: allUnassignedBookings.length });
+        updateStats(counts, result.slotSummary.totalSlots);
+      }
+
       renderQueue();
+      updateUnassignedBadge();
     }
   } catch (e) {
     showToast('⚠️', 'ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้');
   } finally {
     showLoading(false);
-  }
-}
-
-// ─── LOAD SLOT FOR SERVICE DATE (แยกจาก date-picker) ───
-async function loadSlotForServiceDate() {
-  const serviceDate = document.getElementById('service-date-picker').value;
-  if (!serviceDate) return;
-  try {
-    const statsResult = await apiCall('getSlotSummary', { date: serviceDate });
-    if (statsResult.success) {
-      currentSessionQuotas = statsResult.sessionQuotas || {};
-      updateStats(statsResult.counts, statsResult.totalSlots);
-      renderQueue(); // re-render session buttons ให้แสดง quota ของ service date
-    }
-  } catch(e) {
-    // silent fail
   }
 }
 
@@ -769,15 +763,24 @@ function updateStats(counts, totalSlots) {
 // ─── RENDER QUEUE ───
 function renderQueue() {
   const container = document.getElementById('queue-container');
-  let filtered = allBookings.filter(b => {
-    if (currentFilter === 'all') return b.status !== 'ยกเลิก';
-    if (currentFilter === 'ยังไม่กำหนด') return !b.session && b.status !== 'ยกเลิก';
-    if (currentFilter === 'เสร็จ') return b.status === 'เสร็จ';
-    return b.session === currentFilter && b.status !== 'ยกเลิก';
-  });
+  let filtered;
+
+  if (currentFilter === 'unassigned') {
+    // ⏳ ยังไม่กำหนดวัน → ใช้ allUnassignedBookings (column J ว่าง)
+    filtered = allUnassignedBookings;
+  } else {
+    filtered = allBookings.filter(b => {
+      if (currentFilter === 'all')    return b.status !== 'ยกเลิก';
+      if (currentFilter === 'เสร็จ') return b.status === 'เสร็จ';
+      return b.session === currentFilter && b.status !== 'ยกเลิก';
+    });
+  }
 
   if (filtered.length === 0) {
-    container.innerHTML = `<div class="queue-empty"><div class="empty-icon">📋</div>ไม่มีรายการในหมวดนี้</div>`;
+    const emptyMsg = currentFilter === 'unassigned'
+      ? 'ลูกค้าทุกคนได้รับวันนัดแล้ว ✅'
+      : 'ไม่มีรายการในหมวดนี้';
+    container.innerHTML = `<div class="queue-empty"><div class="empty-icon">📋</div>${emptyMsg}</div>`;
     return;
   }
 
@@ -873,18 +876,27 @@ function getStatusDot(status) {
 
 // ─── ASSIGN SESSION ───
 async function doAssignSession(bookingRef, session, btn) {
-  // serviceDate = วันที่ใน service-date-picker (วันให้บริการ) ถ้าไม่ได้เลือก ใช้ date-picker แทน
   const serviceDate = document.getElementById('service-date-picker').value
     || document.getElementById('date-picker').value;
   try {
     const result = await apiCall('assignSession', { bookingRef, session, staffName: currentBranch.name, serviceDate });
     if (result.success) {
-      const idx = allBookings.findIndex(b => b.bookingRef === bookingRef);
-      if (idx !== -1) {
-        allBookings[idx] = result.booking;
-        renderQueue();
-        updateStatsFromBookings();
+      const unassignedIdx = allUnassignedBookings.findIndex(b => b.bookingRef === bookingRef);
+      if (unassignedIdx !== -1) {
+        // booking เดิมอยู่ใน unassigned → ลบออก + เพิ่มเข้า allBookings ถ้า serviceDate ตรง
+        allUnassignedBookings.splice(unassignedIdx, 1);
+        if (result.booking.bookingDate === serviceDate) {
+          allBookings.push(result.booking);
+          allBookings.sort((a, b) => a.queueNo - b.queueNo);
+        }
+      } else {
+        // booking อยู่ใน allBookings → update in-place
+        const idx = allBookings.findIndex(b => b.bookingRef === bookingRef);
+        if (idx !== -1) allBookings[idx] = result.booking;
       }
+      renderQueue();
+      updateStatsFromBookings();
+      updateUnassignedBadge();
       showToast(SESSIONS[session].icon, `กำหนด ${session} แล้ว`, `คิว #${result.booking.queueNo} — ${result.booking.firstName}`);
     } else {
       showToast('⚠️', 'ข้อผิดพลาด', result.error);
@@ -902,8 +914,21 @@ async function doUpdateStatus(bookingRef, status) {
   try {
     const result = await apiCall('updateStatus', { bookingRef, status });
     if (result.success) {
-      const idx = allBookings.findIndex(b => b.bookingRef === bookingRef);
-      if (idx !== -1) { allBookings[idx].status = status; renderQueue(); updateStatsFromBookings(); }
+      // ตรวจทั้ง 2 arrays
+      const unassignedIdx = allUnassignedBookings.findIndex(b => b.bookingRef === bookingRef);
+      if (unassignedIdx !== -1) {
+        if (status === 'ยกเลิก') {
+          allUnassignedBookings.splice(unassignedIdx, 1);
+        } else {
+          allUnassignedBookings[unassignedIdx].status = status;
+        }
+        updateUnassignedBadge();
+      } else {
+        const idx = allBookings.findIndex(b => b.bookingRef === bookingRef);
+        if (idx !== -1) allBookings[idx].status = status;
+      }
+      renderQueue();
+      updateStatsFromBookings();
     } else {
       showToast('⚠️', 'ข้อผิดพลาด', result.error);
     }
@@ -913,15 +938,30 @@ async function doUpdateStatus(bookingRef, status) {
 }
 
 function updateStatsFromBookings() {
-  const counts = { total: 0, เช้า: 0, บ่าย: 0, เย็น: 0, ยังไม่กำหนด: 0, เสร็จ: 0 };
+  // นับจาก allBookings (service date) และ allUnassignedBookings
+  const counts = { total: 0, เช้า: 0, บ่าย: 0, เย็น: 0,
+    ยังไม่กำหนด: allUnassignedBookings.length, เสร็จ: 0 };
   allBookings.forEach(b => {
     if (b.status === 'ยกเลิก') return;
     counts.total++;
-    if (b.session) counts[b.session] = (counts[b.session] || 0) + 1;
-    else counts.ยังไม่กำหนด++;
+    if (b.session && ['เช้า','บ่าย','เย็น'].includes(b.session))
+      counts[b.session] = (counts[b.session] || 0) + 1;
     if (b.status === 'เสร็จ') counts.เสร็จ++;
   });
-  updateStats(counts, 0);
+  updateStats(counts, 0); // totalSlots ไม่ทราบหลัง mutation → ซ่อน chip
+}
+
+// ─── UNASSIGNED BADGE (count บน tab) ───
+function updateUnassignedBadge() {
+  const badge = document.getElementById('unassigned-count-badge');
+  if (!badge) return;
+  const count = allUnassignedBookings.length;
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+  }
 }
 
 // ─── FILTER ───
@@ -943,30 +983,38 @@ async function pollNewBookings() {
   try {
     const result = await apiCall('getNewBookings', { lastTimestamp });
     if (result.success && result.newBookings.length > 0) {
-      const today = document.getElementById('date-picker').value;
-      const todayNew = result.newBookings.filter(b => {
-        const regDate = b.timestamp ? b.timestamp.split('T')[0] : '';
-        return regDate === today;
-      });
+      let addedCount = 0;
 
-      todayNew.forEach(b => {
-        if (!allBookings.find(x => x.bookingRef === b.bookingRef)) {
+      result.newBookings.forEach(b => {
+        const alreadyInBookings    = allBookings.find(x => x.bookingRef === b.bookingRef);
+        const alreadyInUnassigned  = allUnassignedBookings.find(x => x.bookingRef === b.bookingRef);
+        if (alreadyInBookings || alreadyInUnassigned) return;
+
+        // booking ใหม่มี column J ว่าง → ไปที่ unassigned
+        // (ถ้ามี bookingDate แล้วและตรงกับ service date → allBookings)
+        const currentServiceDate = document.getElementById('service-date-picker').value;
+        if (b.bookingDate && b.bookingDate === currentServiceDate) {
           allBookings.push(b);
           allBookings.sort((a, x) => a.queueNo - x.queueNo);
-          newCardRefs.add(b.bookingRef);
-          setTimeout(() => newCardRefs.delete(b.bookingRef), 8000);
+        } else {
+          allUnassignedBookings.push(b);
+          allUnassignedBookings.sort((a, x) => a.queueNo - x.queueNo);
         }
+
+        newCardRefs.add(b.bookingRef);
+        setTimeout(() => newCardRefs.delete(b.bookingRef), 8000);
+        addedCount++;
+
+        showToast('🔔', `ลูกค้าใหม่! คิว #${b.queueNo}`,
+          `${b.firstName} ${b.lastName} — ${b.model}`);
       });
 
-      if (todayNew.length > 0) {
+      if (addedCount > 0) {
         renderQueue();
         updateStatsFromBookings();
-        todayNew.forEach(b => {
-          showToast('🔔', `ลูกค้าใหม่! คิว #${b.queueNo}`,
-            `${b.firstName} ${b.lastName} — ${b.model}`);
-        });
+        updateUnassignedBadge();
         playNotificationSound();
-        addNotifCount(todayNew.length);
+        addNotifCount(addedCount);
         updatePageTitle();
       }
       lastTimestamp = new Date().toISOString();
@@ -1049,10 +1097,10 @@ function doPrint(booking) {
       bookingDateDisplay = `${bd.getDate()} ${TH_MONTHS[bd.getMonth()]} ${bd.getFullYear() + 543}`;
     }
   }
-  // เพิ่ม session ถ้ามี
-  const sessionSuffix = sessionInfo
-    ? ` — ${sessionInfo.icon} ${session} (${sessionInfo.time})`
-    : (session ? ` — ${session}` : '');
+  // เพิ่ม session ถ้ามี (ไม่ใส่ icon)
+  const sessionSuffix = session
+    ? ` — ${session}${sessionInfo ? ' (' + sessionInfo.time + ')' : ''}`
+    : '';
 
   // ราคา Battery จาก quotaConfig (ถ้ามี)
   let priceDisplay = '—';
@@ -1061,8 +1109,15 @@ function doPrint(booking) {
     if (q && q.price) priceDisplay = '฿' + Number(q.price).toLocaleString();
   }
 
-  // เบอร์สาขา
-  const branchPhone = (currentBranch && currentBranch.phone) ? currentBranch.phone : '—';
+  // เบอร์โทรลูกค้า — เติม 0 นำหน้าถ้าขาด (9 หลัก ขึ้นต้น 6/8/9)
+  const phoneDisplay = booking.phone
+    ? (/^\d{9}$/.test(String(booking.phone)) && /^[689]/.test(String(booking.phone))
+        ? '0' + booking.phone
+        : String(booking.phone))
+    : '—';
+
+  // เบอร์สาขา — Code.gs login() return field ชื่อ tel (column C ใน CONFIG_Branch)
+  const branchPhone = (currentBranch && currentBranch.tel) ? currentBranch.tel : '—';
 
   document.getElementById('print-slip-content').innerHTML = `
     <div class="print-doc">
@@ -1112,7 +1167,7 @@ function doPrint(booking) {
         </tr>
         <tr>
           <th>เบอร์โทรศัพท์</th>
-          <td>${booking.phone}</td>
+          <td>${phoneDisplay}</td>
         </tr>
         <tr>
           <th>E-Mail</th>
@@ -1150,15 +1205,9 @@ function doPrint(booking) {
       <div class="print-sig-row">
         <div class="print-sig-box">
           <div class="print-sig-label">พนักงาน เซ็น รับจองสิทธิ์</div>
-          <div class="print-sig-underline">ลายเซ็น: _______________________________</div>
-          <div class="print-sig-underline">ชื่อ-นามสกุล: ___________________________</div>
-          <div class="print-sig-underline">วันที่: __________________________________</div>
         </div>
         <div class="print-sig-box">
           <div class="print-sig-label">ลูกค้า เซ็น รับทราบเงื่อนไข</div>
-          <div class="print-sig-underline">ลายเซ็น: _______________________________</div>
-          <div class="print-sig-underline">ชื่อ-นามสกุล: ___________________________</div>
-          <div class="print-sig-underline">วันที่: __________________________________</div>
         </div>
       </div>
 
@@ -1190,14 +1239,18 @@ async function doSaveReceipt(bookingRef) {
   try {
     const result = await apiCall('updateReceipt', { bookingRef, receiptDeposit, receiptSale });
     if (result.success) {
-      const idx = allBookings.findIndex(b => b.bookingRef === bookingRef);
-      if (idx !== -1) {
-        allBookings[idx].receiptDeposit = receiptDeposit;
-        allBookings[idx].receiptSale = receiptSale;
-      }
+      // อัพเดท state ทั้ง 2 arrays
+      [allBookings, allUnassignedBookings].forEach(arr => {
+        const idx = arr.findIndex(b => b.bookingRef === bookingRef);
+        if (idx !== -1) {
+          arr[idx].receiptDeposit = receiptDeposit;
+          arr[idx].receiptSale = receiptSale;
+        }
+      });
       depositInput.classList.toggle('filled', !!receiptDeposit);
       saleInput.classList.toggle('filled', !!receiptSale);
-      const qNo = allBookings.find(b => b.bookingRef === bookingRef)?.queueNo || '';
+      const qNo = (allBookings.find(b => b.bookingRef === bookingRef)
+        || allUnassignedBookings.find(b => b.bookingRef === bookingRef))?.queueNo || '';
       showToast('🧾', `บันทึกใบเสร็จแล้ว`, `คิว #${qNo}${receiptDeposit ? ' · มัดจำ: ' + receiptDeposit : ''}${receiptSale ? ' · ขาย: ' + receiptSale : ''}`);
     } else {
       showToast('⚠️', 'ข้อผิดพลาด', result.error);
