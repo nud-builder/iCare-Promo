@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>จองเปลี่ยน Battery — iCare</title>
+<title>ลงทะเบียนเปลี่ยน Battery — iCare</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -33,8 +33,17 @@ body {
   padding: 5px 16px; font-size: 13px; font-weight: 600;
 }
 
+/* ─── Notice Banner ─── */
+.notice-banner {
+  background: #ff6b35; color: #fff;
+  padding: 12px 20px; text-align: center;
+  font-size: 14px; font-weight: 700; line-height: 1.5;
+  border-bottom: 3px solid #e55722;
+}
+.notice-banner .notice-big { font-size: 16px; display: block; margin-bottom: 2px; }
+
 /* ─── Form Body ─── */
-.card-body { padding: 28px 28px 24px; }
+.card-body { padding: 24px 28px 20px; }
 
 .form-group { margin-bottom: 20px; }
 .form-group label {
@@ -58,22 +67,6 @@ body {
   padding: 8px 14px; font-size: 14px; font-weight: 700;
   align-items: center; gap: 6px;
 }
-
-/* Date grid */
-.date-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
-.date-option {
-  padding: 10px 4px; border: 2px solid #e8e8e8; border-radius: 10px;
-  text-align: center; cursor: pointer; transition: all 0.15s; background: #fafafa;
-}
-.date-option:hover { border-color: #0f3460; background: #e8eaf6; }
-.date-option.selected { border-color: #0f3460; background: #1a1a2e; color: #fff; }
-.date-option.full { opacity: 0.4; cursor: not-allowed; background: #f5f5f5; }
-.date-day { font-size: 11px; color: inherit; opacity: 0.8; }
-.date-num { font-size: 22px; font-weight: 800; line-height: 1.1; }
-.date-month { font-size: 11px; opacity: 0.8; }
-.date-slots { font-size: 10px; color: #4caf50; margin-top: 2px; font-weight: 600; }
-.date-option.selected .date-slots { color: #81c784; }
-.date-option.full .date-slots { color: #e53935 !important; }
 
 /* Submit btn */
 .btn-submit {
@@ -103,15 +96,30 @@ body {
 .success-icon { font-size: 56px; margin-bottom: 8px; }
 .success-title { font-size: 22px; font-weight: 800; }
 .success-sub { font-size: 14px; opacity: 0.85; margin-top: 4px; }
-.success-body { padding: 28px; }
+.success-body { padding: 24px 28px; }
 .queue-display {
   background: #f0f4ff; border-radius: 16px; padding: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 .queue-label { font-size: 13px; color: #888; font-weight: 600; }
 .queue-number { font-size: 72px; font-weight: 900; color: #1a1a2e; line-height: 1; margin: 4px 0; }
 .queue-ref { font-size: 12px; color: #aaa; word-break: break-all; margin-top: 4px; }
-.booking-details { text-align: left; }
+
+/* ─── WARNING BOX ─── */
+.warning-box {
+  background: #fff3cd; border: 2px solid #ffc107; border-radius: 14px;
+  padding: 16px; margin: 14px 0; text-align: left;
+}
+.warning-box .warn-title {
+  font-size: 16px; font-weight: 800; color: #856404;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}
+.warning-box ul {
+  margin: 0; padding-left: 20px; color: #5d4037; font-size: 14px; line-height: 1.8;
+}
+.warning-box ul li { margin-bottom: 2px; }
+
+.booking-details { text-align: left; margin-bottom: 14px; }
 .detail-row {
   display: flex; justify-content: space-between; align-items: flex-start;
   padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px;
@@ -119,12 +127,7 @@ body {
 .detail-row:last-child { border-bottom: none; }
 .detail-row .dlabel { color: #888; }
 .detail-row .dvalue { font-weight: 700; color: #1a1a2e; text-align: right; max-width: 60%; }
-.session-info-box {
-  background: #fff8e1; border: 2px solid #ffcc02; border-radius: 12px;
-  padding: 14px; margin: 16px 0; font-size: 14px; color: #5d4037;
-  display: flex; gap: 10px; align-items: flex-start; text-align: left;
-}
-.session-info-box .si-icon { font-size: 22px; flex-shrink: 0; }
+
 .btn-new-booking {
   width: 100%; padding: 14px; background: #f0f2f5; border: none; border-radius: 12px;
   font-size: 15px; font-weight: 700; cursor: pointer; color: #1a1a2e;
@@ -180,6 +183,14 @@ body {
       <div class="header-sub">iCare — Apple Authorized Service Provider</div>
       <div class="branch-pill" id="branch-pill">กำลังโหลด...</div>
     </div>
+
+    <!-- แบนเนอร์เตือนสำคัญ -->
+    <div class="notice-banner">
+      <span class="notice-big">⚠️ กรุณาอ่านก่อนลงทะเบียน</span>
+      หลังลงทะเบียนแล้ว <strong>รอรับบริการที่สาขาได้เลย</strong><br>
+      อย่าออกไปก่อน — พนักงานจะเรียกชำระเงินตามคิว
+    </div>
+
     <div class="card-body">
 
       <div class="form-group">
@@ -191,14 +202,6 @@ body {
           💰 <span id="price-display">—</span>
         </div>
         <div class="field-error-msg" id="err-model">กรุณาเลือกรุ่น iPhone</div>
-      </div>
-
-      <div class="form-group">
-        <label>📅 วันที่ต้องการจอง <span class="required">*</span></label>
-        <div class="date-grid" id="date-grid">
-          <div style="grid-column:1/-1; text-align:center; color:#aaa; padding:20px;">กำลังโหลดวันที่...</div>
-        </div>
-        <div class="field-error-msg" id="err-date">กรุณาเลือกวันที่</div>
       </div>
 
       <div class="form-group">
@@ -225,12 +228,10 @@ body {
       </div>
 
       <button class="btn-submit" id="btn-submit" onclick="doSubmit()">
-        ✅ ยืนยันการจอง
+        ✅ ลงทะเบียนรับคิว
       </button>
 
       <div class="form-note">
-        * หลังจากจองแล้ว กรุณามาตามวันที่เลือก<br>
-        พนักงานจะกำหนดเวลา (เช้า/บ่าย/เย็น) ให้ทราบ ณ เคาน์เตอร์<br>
         สอบถามเพิ่มเติม: <span id="branch-tel">—</span>
       </div>
     </div>
@@ -242,26 +243,31 @@ body {
   <div class="success-card">
     <div class="success-header">
       <div class="success-icon">🎉</div>
-      <div class="success-title">จองสำเร็จแล้ว!</div>
+      <div class="success-title">ลงทะเบียนสำเร็จ!</div>
       <div class="success-sub">กรุณาจำหมายเลขคิวของคุณ</div>
     </div>
     <div class="success-body">
       <div class="queue-display">
-        <div class="queue-label">หมายเลขคิว</div>
+        <div class="queue-label">หมายเลขคิวของคุณ</div>
         <div class="queue-number" id="success-queue">—</div>
         <div class="queue-ref" id="success-ref">—</div>
       </div>
-      <div class="booking-details" id="booking-details"></div>
-      <div class="session-info-box">
-        <div class="si-icon">ℹ️</div>
-        <div>
-          <strong>การรับบริการ:</strong> พนักงานจะแจ้งรอบเวลา (เช้า/บ่าย/เย็น)<br>
-          ให้ทราบเมื่อคุณมาถึงเคาน์เตอร์ในวันที่จอง<br>
-          กรุณาแสดงหมายเลขคิวแก่พนักงาน
-        </div>
+
+      <!-- กล่องเตือนสำคัญ -->
+      <div class="warning-box">
+        <div class="warn-title">🚨 กรุณาอ่านสำคัญมาก!</div>
+        <ul>
+          <li><strong>รอที่สาขาได้เลย</strong> — ห้ามออกไปก่อน</li>
+          <li>พนักงานจะ<strong>เรียกคิวชำระเงิน</strong>ตามลำดับ</li>
+          <li>แจ้งพนักงานว่าต้องการเข้ารับบริการ<strong>รอบไหน</strong> (เช้า/บ่าย/เย็น)</li>
+          <li>แสดง<strong>หมายเลขคิวนี้</strong>แก่พนักงาน</li>
+        </ul>
       </div>
+
+      <div class="booking-details" id="booking-details"></div>
+
       <button class="btn-new-booking" onclick="resetForm()">
-        ➕ จองใหม่อีกครั้ง
+        ➕ ลงทะเบียนอีกเครื่อง
       </button>
     </div>
   </div>
@@ -269,12 +275,10 @@ body {
 
 <script>
 // ─── CONFIG ───
-// ⚠️ เปลี่ยนเป็น URL ของ Google Apps Script ที่ Deploy แล้ว
-const API_URL = 'https://script.google.com/macros/s/AKfycbwosuHFtZllUp8yiB9mHUuw9Z2rrOMeM4bMA16NqBgqw44SOMdaHvXB7UCDO4Fh9SnQ/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyEpK7728aBIGtaIi6VtQVK_jw7KBHjp-ztZzadZAH3TmS8oaTQBWVvsDRMW0IweJvb/exec';
 
 // ─── State ───
 let branchConfig = null;
-let selectedDate = null;
 let isSubmitting = false;
 
 // ─── INIT ───
@@ -317,12 +321,10 @@ function showError(msg) {
 
 // ─── RENDER CONFIG ───
 function renderConfig(cfg) {
-  // Branch info
-  document.title = `จองแบต — ${cfg.branch.name}`;
+  document.title = `ลงทะเบียน — ${cfg.branch.name}`;
   document.getElementById('branch-pill').textContent = '📍 ' + cfg.branch.name;
   document.getElementById('branch-tel').textContent = cfg.branch.tel || '—';
 
-  // iPhone models
   const modelSel = document.getElementById('field-model');
   cfg.models.forEach(m => {
     const opt = document.createElement('option');
@@ -331,40 +333,6 @@ function renderConfig(cfg) {
     opt.textContent = `${m.model}  (฿${Number(m.price).toLocaleString()})`;
     modelSel.appendChild(opt);
   });
-
-  // Available dates
-  renderDateGrid(cfg.availableDates);
-}
-
-function renderDateGrid(dates) {
-  const grid = document.getElementById('date-grid');
-  if (!dates || dates.length === 0) {
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#aaa; padding:16px;">ไม่มีวันที่ว่างในขณะนี้</div>';
-    return;
-  }
-  const thDays = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
-  const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-
-  grid.innerHTML = dates.slice(0, 18).map(d => {
-    const dt = new Date(d.date + 'T12:00:00');
-    const isFull = d.slots <= 0;
-    return `
-      <div class="date-option ${isFull ? 'full' : ''}" onclick="selectDate('${d.date}', this)"
-           data-date="${d.date}">
-        <div class="date-day">${thDays[dt.getDay()]}</div>
-        <div class="date-num">${dt.getDate()}</div>
-        <div class="date-month">${thMonths[dt.getMonth()]}</div>
-        <div class="date-slots">${isFull ? 'เต็มแล้ว' : `ว่าง ${d.slots}`}</div>
-      </div>`;
-  }).join('');
-}
-
-function selectDate(dateStr, el) {
-  if (el.classList.contains('full')) return;
-  selectedDate = dateStr;
-  document.querySelectorAll('.date-option').forEach(d => d.classList.remove('selected'));
-  el.classList.add('selected');
-  clearError('err-date');
 }
 
 function onModelChange() {
@@ -385,16 +353,14 @@ function onModelChange() {
 async function doSubmit() {
   if (isSubmitting) return;
 
-  // Validate
   let hasError = false;
   const model = document.getElementById('field-model').value;
   const firstName = document.getElementById('field-firstname').value.trim();
   const phone = document.getElementById('field-phone').value.trim();
 
-  if (!model) { showError2('err-model', 'field-model'); hasError = true; }
-  if (!selectedDate) { document.getElementById('err-date').style.display = 'block'; hasError = true; }
-  if (!firstName) { showError2('err-firstname', 'field-firstname'); hasError = true; }
-  if (!phone || !/^[0-9\-+\s]{9,15}$/.test(phone)) { showError2('err-phone', 'field-phone'); hasError = true; }
+  if (!model) { showFieldError('err-model', 'field-model'); hasError = true; }
+  if (!firstName) { showFieldError('err-firstname', 'field-firstname'); hasError = true; }
+  if (!phone || !/^[0-9\-+\s]{9,15}$/.test(phone)) { showFieldError('err-phone', 'field-phone'); hasError = true; }
   if (hasError) return;
 
   isSubmitting = true;
@@ -411,8 +377,8 @@ async function doSubmit() {
       lastName: document.getElementById('field-lastname').value.trim(),
       phone,
       email: document.getElementById('field-email').value.trim(),
-      bookingDate: selectedDate,
       source: 'walk-in'
+      // ไม่ส่ง bookingDate — server กำหนดวันนี้อัตโนมัติ
     };
 
     const res = await fetch(API_URL, {
@@ -426,19 +392,19 @@ async function doSubmit() {
       showSuccess(result);
     } else {
       btn.disabled = false;
-      btn.textContent = '✅ ยืนยันการจอง';
+      btn.textContent = '✅ ลงทะเบียนรับคิว';
       alert('เกิดข้อผิดพลาด: ' + (result.error || 'กรุณาลองใหม่'));
     }
   } catch (e) {
     btn.disabled = false;
-    btn.textContent = '✅ ยืนยันการจอง';
+    btn.textContent = '✅ ลงทะเบียนรับคิว';
     alert('ไม่สามารถเชื่อมต่อได้ กรุณาตรวจสอบ Internet แล้วลองใหม่');
   } finally {
     isSubmitting = false;
   }
 }
 
-function showError2(errId, fieldId) {
+function showFieldError(errId, fieldId) {
   document.getElementById(errId).style.display = 'block';
   document.getElementById(fieldId).classList.add('field-error');
   document.getElementById(fieldId).addEventListener('input', () => clearError(errId, fieldId), { once: true });
@@ -462,15 +428,14 @@ function showSuccess(result) {
   document.getElementById('success-queue').textContent = String(result.queueNo).padStart(3, '0');
   document.getElementById('success-ref').textContent = 'Ref: ' + result.bookingRef;
 
-  const dt = new Date(result.bookingDate + 'T12:00:00');
-  const thDays = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
-  const thMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-  const dateLabel = `วัน${thDays[dt.getDay()]}ที่ ${dt.getDate()} ${thMonths[dt.getMonth()]}`;
+  const sel = document.getElementById('field-model');
+  const opt = sel.options[sel.selectedIndex];
+  const price = opt.dataset.price ? Number(opt.dataset.price) : (result.price || 0);
 
   document.getElementById('booking-details').innerHTML = `
     <div class="detail-row">
       <span class="dlabel">ชื่อ-นามสกุล</span>
-      <span class="dvalue">${result.firstName} ${result.lastName}</span>
+      <span class="dvalue">${result.firstName} ${result.lastName || ''}</span>
     </div>
     <div class="detail-row">
       <span class="dlabel">รุ่น iPhone</span>
@@ -478,11 +443,7 @@ function showSuccess(result) {
     </div>
     <div class="detail-row">
       <span class="dlabel">ราคา Battery</span>
-      <span class="dvalue">฿${result.price ? Number(result.price).toLocaleString() : '—'}</span>
-    </div>
-    <div class="detail-row">
-      <span class="dlabel">วันที่จอง</span>
-      <span class="dvalue">${dateLabel}</span>
+      <span class="dvalue">฿${price ? Number(price).toLocaleString() : '—'}</span>
     </div>
     <div class="detail-row">
       <span class="dlabel">สาขา</span>
@@ -500,10 +461,8 @@ function resetForm() {
   document.getElementById('field-phone').value = '';
   document.getElementById('field-email').value = '';
   document.getElementById('model-price-hint').style.display = 'none';
-  document.querySelectorAll('.date-option').forEach(d => d.classList.remove('selected'));
   document.getElementById('btn-submit').disabled = false;
-  document.getElementById('btn-submit').textContent = '✅ ยืนยันการจอง';
-  selectedDate = null;
+  document.getElementById('btn-submit').textContent = '✅ ลงทะเบียนรับคิว';
   window.scrollTo(0, 0);
 }
 </script>
