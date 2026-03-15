@@ -322,6 +322,35 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 }
 .save-ok { color: #2e7d32; }
 .save-err { color: #d32f2f; }
+
+/* ─── Receipt Group ─── */
+.receipt-group {
+  margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e8e8e8;
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+.receipt-input {
+  flex: 1; min-width: 110px; padding: 7px 10px;
+  border: 1.5px solid #e0e0e0; border-radius: 8px;
+  font-size: 13px; outline: none; transition: border-color 0.2s; background: #fafafa;
+}
+.receipt-input:focus { border-color: #0f3460; background: #fff; }
+.receipt-input.filled { border-color: #2e7d32; background: #f1f8f4; }
+.receipt-input::placeholder { color: #bbb; }
+.btn-save-receipt {
+  padding: 7px 14px; background: #e8eaf6; color: #3949ab;
+  border: 1px solid #9fa8da; border-radius: 8px; font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.btn-save-receipt:hover { background: #c5cae9; }
+
+/* ─── Slot Info Chip ─── */
+.slot-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 700;
+  background: #e8f5e9; color: #2e7d32;
+}
+.slot-chip.slot-full { background: #ffebee; color: #c62828; }
+
 .model-toggle {
   display: flex; align-items: center; gap: 8px;
 }
@@ -439,6 +468,31 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
         </div>
       </div>
     </div>
+
+    <!-- CONFIG_Session -->
+    <div class="settings-section">
+      <h3>🕐 Quota Session ต่อวัน</h3>
+      <p style="font-size:13px;color:#888;margin-bottom:14px;">กำหนดจำนวนลูกค้าสูงสุดต่อ Session (<strong>0</strong> = ปิด Session, <strong>-1</strong> = ไม่จำกัด)</p>
+      <div id="session-config-loading" style="text-align:center;padding:20px;color:#aaa;">กำลังโหลด...</div>
+      <div id="session-config-container" style="display:none;">
+        <table class="config-table">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>วัน</th>
+              <th style="text-align:center;">🌅 เช้า</th>
+              <th style="text-align:center;">🌞 บ่าย</th>
+              <th style="text-align:center;">🌆 เย็น</th>
+            </tr>
+          </thead>
+          <tbody id="session-config-body"></tbody>
+        </table>
+        <div style="margin-top:16px; display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
+          <button class="btn-save-config" onclick="saveSessionConfig()">💾 บันทึก Session</button>
+          <span class="save-status" id="session-save-status"></span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ─── QUEUE PANEL ─── -->
@@ -449,6 +503,7 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
         <label>📅 วันที่</label>
         <input type="date" id="date-picker" onchange="loadBookings()">
       </div>
+      <span class="slot-chip" id="slot-info-chip" style="display:none;">📊 Slot: —</span>
       <button class="btn-refresh" onclick="loadBookings()">
         🔄 รีเฟรช
       </button>
@@ -540,6 +595,7 @@ let newCount = 0;
 const newCardRefs = new Set();
 let settingsVisible = false;
 let branchFullConfig = null;
+let currentSessionQuotas = {};
 
 // ─── API ───
 async function apiCall(action, params = {}) {
@@ -633,12 +689,13 @@ async function loadBookings() {
       apiCall('getSlotSummary', { date })
     ]);
 
+    if (statsResult.success) {
+      currentSessionQuotas = statsResult.sessionQuotas || {};
+      updateStats(statsResult.counts, statsResult.totalSlots);
+    }
     if (bookResult.success) {
       allBookings = bookResult.bookings;
       renderQueue();
-    }
-    if (statsResult.success) {
-      updateStats(statsResult.counts, statsResult.totalSlots);
     }
   } catch (e) {
     showToast('⚠️', 'ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้');
@@ -654,6 +711,16 @@ function updateStats(counts, totalSlots) {
   document.getElementById('stat-afternoon').textContent = counts.บ่าย || 0;
   document.getElementById('stat-evening').textContent = counts.เย็น || 0;
   document.getElementById('stat-done').textContent = counts.เสร็จ || 0;
+
+  const chip = document.getElementById('slot-info-chip');
+  const used = counts.total || 0;
+  if (totalSlots > 0) {
+    chip.textContent = `📊 ${used}/${totalSlots} Slot`;
+    chip.className = 'slot-chip' + (used >= totalSlots ? ' slot-full' : '');
+    chip.style.display = 'inline-flex';
+  } else {
+    chip.style.display = 'none';
+  }
 }
 
 // ─── RENDER QUEUE ───
@@ -680,14 +747,30 @@ function renderCard(b) {
     ? '<span class="customer-source source-online">🌐 Online</span>'
     : '<span class="customer-source source-walk-in">🏪 Walk-in</span>';
 
-  const sessionBtns = Object.entries(SESSIONS).map(([key, val]) => `
-    <button class="btn-session ${b.session === key ? 'selected-' + key : ''}"
+  const sessionBtns = Object.entries(SESSIONS).map(([key, val]) => {
+    const assignedCount = allBookings.filter(x => x.session === key && x.status !== 'ยกเลิก').length;
+    const quota = currentSessionQuotas[key];
+    // quota: undefined/-1 = ไม่จำกัด, 0 = ปิด, N>0 = จำกัด
+    let quotaHint = '';
+    if (quota === 0) {
+      quotaHint = `<span class="session-time-hint" style="color:#ef9a9a;">ปิด</span>`;
+    } else if (quota > 0) {
+      const full = assignedCount >= quota;
+      quotaHint = `<span class="session-time-hint" style="${full ? 'color:#ef9a9a;' : ''}">${assignedCount}/${quota}</span>`;
+    } else {
+      quotaHint = `<span class="session-time-hint">${val.start} น.</span>`;
+    }
+    const isSelected = b.session === key;
+    const isClosed = quota === 0;
+    const isFull = quota > 0 && assignedCount >= quota;
+    const isDone = b.status === 'เสร็จ' || b.status === 'ยกเลิก';
+    return `<button class="btn-session ${isSelected ? 'selected-' + key : ''}"
       onclick="doAssignSession('${b.bookingRef}', '${key}', this)"
-      ${b.status === 'เสร็จ' || b.status === 'ยกเลิก' ? 'disabled' : ''}>
+      ${isDone || (isClosed && !isSelected) || (isFull && !isSelected) ? 'disabled' : ''}>
       ${val.icon} ${key}
-      <span class="session-time-hint">${val.start} น.</span>
-    </button>
-  `).join('');
+      ${quotaHint}
+    </button>`;
+  }).join('');
 
   const regTime = b.timestamp
     ? new Date(b.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
@@ -720,6 +803,21 @@ function renderCard(b) {
         </button>
         <button class="btn-print" onclick="doPrint(${JSON.stringify(b).replace(/"/g, '&quot;')})">
           🖨️ พิมพ์
+        </button>
+      </div>
+      <div class="receipt-group">
+        <input class="receipt-input ${b.receiptDeposit ? 'filled' : ''}" type="text"
+          id="deposit-${b.bookingRef}" placeholder="🧾 เลขใบมัดจำ"
+          value="${b.receiptDeposit || ''}"
+          ${b.status === 'ยกเลิก' ? 'disabled' : ''}>
+        <input class="receipt-input ${b.receiptSale ? 'filled' : ''}" type="text"
+          id="sale-${b.bookingRef}" placeholder="🧾 เลขใบขาย"
+          value="${b.receiptSale || ''}"
+          ${b.status === 'ยกเลิก' ? 'disabled' : ''}>
+        <button class="btn-save-receipt"
+          onclick="doSaveReceipt('${b.bookingRef}')"
+          ${b.status === 'ยกเลิก' ? 'disabled' : ''}>
+          💾 บันทึก
         </button>
       </div>
     </div>
@@ -930,6 +1028,35 @@ function showLoading(show) {
   document.getElementById('loading').style.display = show ? 'flex' : 'none';
 }
 
+// ─── RECEIPT ───
+async function doSaveReceipt(bookingRef) {
+  const depositInput = document.getElementById(`deposit-${bookingRef}`);
+  const saleInput = document.getElementById(`sale-${bookingRef}`);
+  if (!depositInput || !saleInput) return;
+
+  const receiptDeposit = depositInput.value.trim();
+  const receiptSale = saleInput.value.trim();
+
+  try {
+    const result = await apiCall('updateReceipt', { bookingRef, receiptDeposit, receiptSale });
+    if (result.success) {
+      const idx = allBookings.findIndex(b => b.bookingRef === bookingRef);
+      if (idx !== -1) {
+        allBookings[idx].receiptDeposit = receiptDeposit;
+        allBookings[idx].receiptSale = receiptSale;
+      }
+      depositInput.classList.toggle('filled', !!receiptDeposit);
+      saleInput.classList.toggle('filled', !!receiptSale);
+      const qNo = allBookings.find(b => b.bookingRef === bookingRef)?.queueNo || '';
+      showToast('🧾', `บันทึกใบเสร็จแล้ว`, `คิว #${qNo}${receiptDeposit ? ' · มัดจำ: ' + receiptDeposit : ''}${receiptSale ? ' · ขาย: ' + receiptSale : ''}`);
+    } else {
+      showToast('⚠️', 'ข้อผิดพลาด', result.error);
+    }
+  } catch(e) {
+    showToast('⚠️', 'ข้อผิดพลาด', 'ไม่สามารถบันทึกได้');
+  }
+}
+
 // ─── SETTINGS PANEL ───
 async function toggleSettings() {
   settingsVisible = !settingsVisible;
@@ -945,28 +1072,35 @@ async function toggleSettings() {
 async function loadBranchConfig() {
   document.getElementById('slot-config-loading').style.display = 'block';
   document.getElementById('quota-config-loading').style.display = 'block';
+  document.getElementById('session-config-loading').style.display = 'block';
   document.getElementById('slot-config-container').style.display = 'none';
   document.getElementById('quota-config-container').style.display = 'none';
+  document.getElementById('session-config-container').style.display = 'none';
 
   try {
     const result = await apiCall('getBranchFullConfig');
     if (!result.success) {
       document.getElementById('slot-config-loading').textContent = '❌ ' + result.error;
       document.getElementById('quota-config-loading').textContent = '❌ ' + result.error;
+      document.getElementById('session-config-loading').textContent = '❌ ' + result.error;
       return;
     }
 
     branchFullConfig = result;
     renderSlotConfig(result.slotConfig);
     renderQuotaConfig(result.quotaConfig);
+    renderSessionConfig(result.sessionConfig);
 
     document.getElementById('slot-config-loading').style.display = 'none';
     document.getElementById('quota-config-loading').style.display = 'none';
+    document.getElementById('session-config-loading').style.display = 'none';
     document.getElementById('slot-config-container').style.display = 'block';
     document.getElementById('quota-config-container').style.display = 'block';
+    document.getElementById('session-config-container').style.display = 'block';
   } catch(e) {
     document.getElementById('slot-config-loading').textContent = '❌ โหลดข้อมูลล้มเหลว';
     document.getElementById('quota-config-loading').textContent = '❌ โหลดข้อมูลล้มเหลว';
+    document.getElementById('session-config-loading').textContent = '❌ โหลดข้อมูลล้มเหลว';
   }
 }
 
@@ -983,7 +1117,7 @@ function renderSlotConfig(slotConfig) {
     const isWeekend = dayNum === 0 || dayNum === 6;
     const dayClass = s.isHoliday ? 'day-holiday' : (isWeekend ? 'day-weekend' : '');
     const dayLabel = s.isHoliday ? '🚫 หยุด' : TH_DAYS[dayNum];
-    const dateDisplay = `${dt.getDate()} ${TH_MONTHS[dt.getMonth()]} ${dt.getFullYear() + 543 - 2000 + 43}`;
+    const dateDisplay = `${dt.getDate()} ${TH_MONTHS[dt.getMonth()]} ${dt.getFullYear() + 543}`;
 
     return `<tr>
       <td>${dateDisplay}</td>
@@ -1027,6 +1161,74 @@ function renderQuotaConfig(quotaConfig) {
       </td>
     </tr>`;
   }).join('');
+}
+
+function renderSessionConfig(sessionConfig) {
+  const tbody = document.getElementById('session-config-body');
+  if (!sessionConfig || sessionConfig.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">ไม่มีข้อมูล Session (ต้องตั้งค่า Slot ก่อน)</td></tr>';
+    return;
+  }
+
+  const sessions = ['เช้า', 'บ่าย', 'เย็น'];
+  tbody.innerHTML = sessionConfig.map(s => {
+    const dt = new Date(s.date + 'T12:00:00');
+    const dayNum = dt.getDay();
+    const isWeekend = dayNum === 0 || dayNum === 6;
+    const dayClass = s.isHoliday ? 'day-holiday' : (isWeekend ? 'day-weekend' : '');
+    const dayLabel = s.isHoliday ? '🚫 หยุด' : TH_DAYS[dayNum];
+    const dateDisplay = `${dt.getDate()} ${TH_MONTHS[dt.getMonth()]} ${dt.getFullYear() + 543}`;
+
+    const sessionCells = sessions.map(ses => {
+      const val = (s[ses] !== undefined && s[ses] !== null) ? s[ses] : -1;
+      if (s.isHoliday) {
+        return `<td style="text-align:center;"><input class="config-input holiday" value="🚫" disabled></td>`;
+      }
+      return `<td style="text-align:center;">
+        <input class="config-input" type="number" min="-1" max="999"
+          data-date="${s.date}" data-session="${ses}"
+          value="${val}" placeholder="-1"
+          title="-1=ไม่จำกัด, 0=ปิด, 1+=จำกัด">
+      </td>`;
+    }).join('');
+
+    return `<tr>
+      <td>${dateDisplay}</td>
+      <td><span class="day-label ${dayClass}">${dayLabel}</span></td>
+      ${sessionCells}
+    </tr>`;
+  }).join('');
+}
+
+async function saveSessionConfig() {
+  const inputs = document.querySelectorAll('#session-config-body input[data-date][data-session]');
+  const sessions = [];
+  inputs.forEach(input => {
+    sessions.push({
+      date: input.dataset.date,
+      session: input.dataset.session,
+      value: parseInt(input.value)
+    });
+  });
+
+  const statusEl = document.getElementById('session-save-status');
+  statusEl.textContent = '⏳ กำลังบันทึก...';
+  statusEl.className = 'save-status';
+
+  try {
+    const result = await apiCall('setConfig', { slots: [], quotas: [], sessions });
+    if (result.success) {
+      statusEl.textContent = `✅ บันทึกแล้ว`;
+      statusEl.className = 'save-status save-ok';
+      branchFullConfig = null;
+    } else {
+      statusEl.textContent = '❌ ' + result.error;
+      statusEl.className = 'save-status save-err';
+    }
+  } catch(e) {
+    statusEl.textContent = '❌ เชื่อมต่อไม่ได้';
+    statusEl.className = 'save-status save-err';
+  }
 }
 
 function onQuotaToggle(idx) {
