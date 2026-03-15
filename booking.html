@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>จองเปลี่ยน Battery — iCare</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+  padding: 20px 16px 40px;
+}
+
+/* ─── Card ─── */
+.form-card {
+  background: #fff; border-radius: 24px; width: 100%; max-width: 480px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5); overflow: hidden;
+}
+
+/* ─── Header ─── */
+.card-header {
+  background: linear-gradient(135deg, #1a1a2e, #0f3460);
+  color: #fff; padding: 28px 28px 24px; text-align: center;
+}
+.header-icon { font-size: 40px; margin-bottom: 6px; }
+.header-title { font-size: 20px; font-weight: 800; }
+.header-sub { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+.branch-pill {
+  display: inline-block; margin-top: 10px;
+  background: rgba(255,255,255,0.15); border-radius: 20px;
+  padding: 5px 16px; font-size: 13px; font-weight: 600;
+}
+
+/* ─── Form Body ─── */
+.card-body { padding: 28px 28px 24px; }
+
+.form-group { margin-bottom: 20px; }
+.form-group label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700; color: #555; margin-bottom: 8px;
+}
+.form-group label .required { color: #e53935; }
+.form-group input, .form-group select {
+  width: 100%; padding: 13px 16px; border: 2px solid #e8e8e8; border-radius: 12px;
+  font-size: 15px; color: #1a1a2e; outline: none; transition: border-color 0.2s;
+  appearance: none; background: #fff;
+}
+.form-group input:focus, .form-group select:focus { border-color: #0f3460; }
+.form-group input::placeholder { color: #bbb; }
+.field-hint { font-size: 12px; color: #aaa; margin-top: 6px; }
+
+/* Model price tag */
+.model-price-hint {
+  display: none; margin-top: 8px;
+  background: #e8f5e9; color: #2e7d32; border-radius: 8px;
+  padding: 8px 14px; font-size: 14px; font-weight: 700;
+  align-items: center; gap: 6px;
+}
+
+/* Date grid */
+.date-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
+.date-option {
+  padding: 10px 4px; border: 2px solid #e8e8e8; border-radius: 10px;
+  text-align: center; cursor: pointer; transition: all 0.15s; background: #fafafa;
+}
+.date-option:hover { border-color: #0f3460; background: #e8eaf6; }
+.date-option.selected { border-color: #0f3460; background: #1a1a2e; color: #fff; }
+.date-option.full { opacity: 0.4; cursor: not-allowed; background: #f5f5f5; }
+.date-day { font-size: 11px; color: inherit; opacity: 0.8; }
+.date-num { font-size: 22px; font-weight: 800; line-height: 1.1; }
+.date-month { font-size: 11px; opacity: 0.8; }
+.date-slots { font-size: 10px; color: #4caf50; margin-top: 2px; font-weight: 600; }
+.date-option.selected .date-slots { color: #81c784; }
+.date-option.full .date-slots { color: #e53935 !important; }
+
+/* Submit btn */
+.btn-submit {
+  width: 100%; padding: 16px; background: linear-gradient(135deg, #0f3460, #533483);
+  color: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 800;
+  cursor: pointer; transition: opacity 0.2s; letter-spacing: 0.3px;
+  margin-top: 8px;
+}
+.btn-submit:hover { opacity: 0.9; }
+.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.form-note {
+  font-size: 12px; color: #aaa; text-align: center; margin-top: 14px; line-height: 1.5;
+}
+
+/* ─── Success Screen ─── */
+#success-screen { display: none; }
+.success-card {
+  background: #fff; border-radius: 24px; width: 100%; max-width: 480px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5); overflow: hidden;
+  text-align: center;
+}
+.success-header {
+  background: linear-gradient(135deg, #1b5e20, #2e7d32);
+  color: #fff; padding: 32px 28px; text-align: center;
+}
+.success-icon { font-size: 56px; margin-bottom: 8px; }
+.success-title { font-size: 22px; font-weight: 800; }
+.success-sub { font-size: 14px; opacity: 0.85; margin-top: 4px; }
+.success-body { padding: 28px; }
+.queue-display {
+  background: #f0f4ff; border-radius: 16px; padding: 20px;
+  margin-bottom: 20px;
+}
+.queue-label { font-size: 13px; color: #888; font-weight: 600; }
+.queue-number { font-size: 72px; font-weight: 900; color: #1a1a2e; line-height: 1; margin: 4px 0; }
+.queue-ref { font-size: 12px; color: #aaa; word-break: break-all; margin-top: 4px; }
+.booking-details { text-align: left; }
+.detail-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px;
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-row .dlabel { color: #888; }
+.detail-row .dvalue { font-weight: 700; color: #1a1a2e; text-align: right; max-width: 60%; }
+.session-info-box {
+  background: #fff8e1; border: 2px solid #ffcc02; border-radius: 12px;
+  padding: 14px; margin: 16px 0; font-size: 14px; color: #5d4037;
+  display: flex; gap: 10px; align-items: flex-start; text-align: left;
+}
+.session-info-box .si-icon { font-size: 22px; flex-shrink: 0; }
+.btn-new-booking {
+  width: 100%; padding: 14px; background: #f0f2f5; border: none; border-radius: 12px;
+  font-size: 15px; font-weight: 700; cursor: pointer; color: #1a1a2e;
+  transition: background 0.2s; margin-top: 8px;
+}
+.btn-new-booking:hover { background: #e0e2e5; }
+
+/* ─── Error / Loading ─── */
+#error-screen { display: none; }
+.error-card {
+  background: #fff; border-radius: 24px; width: 100%; max-width: 480px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5); padding: 48px 32px; text-align: center;
+}
+.error-icon { font-size: 48px; margin-bottom: 12px; }
+.error-msg { font-size: 16px; color: #555; }
+
+.loading-screen {
+  color: #fff; text-align: center; padding: 60px 20px;
+}
+.loading-spinner {
+  width: 48px; height: 48px; border: 5px solid rgba(255,255,255,0.25);
+  border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.field-error { border-color: #e53935 !important; }
+.field-error-msg { font-size: 12px; color: #e53935; margin-top: 5px; display: none; }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading-screen" class="loading-screen">
+  <div class="loading-spinner"></div>
+  <div>กำลังโหลดข้อมูลสาขา...</div>
+</div>
+
+<!-- Error -->
+<div id="error-screen">
+  <div class="error-card">
+    <div class="error-icon">❌</div>
+    <div class="error-msg" id="error-msg">ไม่สามารถโหลดข้อมูลได้</div>
+  </div>
+</div>
+
+<!-- Form -->
+<div id="form-screen" style="display:none; width:100%; max-width:480px;">
+  <div class="form-card">
+    <div class="card-header">
+      <div class="header-icon">🔋</div>
+      <div class="header-title">Final Call Battery 2025</div>
+      <div class="header-sub">iCare — Apple Authorized Service Provider</div>
+      <div class="branch-pill" id="branch-pill">กำลังโหลด...</div>
+    </div>
+    <div class="card-body">
+
+      <div class="form-group">
+        <label>📱 รุ่น iPhone <span class="required">*</span></label>
+        <select id="field-model" onchange="onModelChange()">
+          <option value="">— เลือกรุ่น iPhone —</option>
+        </select>
+        <div class="model-price-hint" id="model-price-hint">
+          💰 <span id="price-display">—</span>
+        </div>
+        <div class="field-error-msg" id="err-model">กรุณาเลือกรุ่น iPhone</div>
+      </div>
+
+      <div class="form-group">
+        <label>📅 วันที่ต้องการจอง <span class="required">*</span></label>
+        <div class="date-grid" id="date-grid">
+          <div style="grid-column:1/-1; text-align:center; color:#aaa; padding:20px;">กำลังโหลดวันที่...</div>
+        </div>
+        <div class="field-error-msg" id="err-date">กรุณาเลือกวันที่</div>
+      </div>
+
+      <div class="form-group">
+        <label>👤 ชื่อ <span class="required">*</span></label>
+        <input type="text" id="field-firstname" placeholder="ชื่อจริง" autocomplete="given-name">
+        <div class="field-error-msg" id="err-firstname">กรุณากรอกชื่อ</div>
+      </div>
+
+      <div class="form-group">
+        <label>👤 นามสกุล</label>
+        <input type="text" id="field-lastname" placeholder="นามสกุล (ถ้ามี)" autocomplete="family-name">
+      </div>
+
+      <div class="form-group">
+        <label>📞 เบอร์โทรศัพท์ <span class="required">*</span></label>
+        <input type="tel" id="field-phone" placeholder="0812345678" autocomplete="tel" maxlength="15">
+        <div class="field-hint">ใช้สำหรับยืนยันตัวตนเมื่อมารับบริการ</div>
+        <div class="field-error-msg" id="err-phone">กรุณากรอกเบอร์โทรที่ถูกต้อง</div>
+      </div>
+
+      <div class="form-group">
+        <label>✉️ อีเมล (ถ้ามี)</label>
+        <input type="email" id="field-email" placeholder="example@email.com" autocomplete="email">
+      </div>
+
+      <button class="btn-submit" id="btn-submit" onclick="doSubmit()">
+        ✅ ยืนยันการจอง
+      </button>
+
+      <div class="form-note">
+        * หลังจากจองแล้ว กรุณามาตามวันที่เลือก<br>
+        พนักงานจะกำหนดเวลา (เช้า/บ่าย/เย็น) ให้ทราบ ณ เคาน์เตอร์<br>
+        สอบถามเพิ่มเติม: <span id="branch-tel">—</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success -->
+<div id="success-screen" style="width:100%; max-width:480px;">
+  <div class="success-card">
+    <div class="success-header">
+      <div class="success-icon">🎉</div>
+      <div class="success-title">จองสำเร็จแล้ว!</div>
+      <div class="success-sub">กรุณาจำหมายเลขคิวของคุณ</div>
+    </div>
+    <div class="success-body">
+      <div class="queue-display">
+        <div class="queue-label">หมายเลขคิว</div>
+        <div class="queue-number" id="success-queue">—</div>
+        <div class="queue-ref" id="success-ref">—</div>
+      </div>
+      <div class="booking-details" id="booking-details"></div>
+      <div class="session-info-box">
+        <div class="si-icon">ℹ️</div>
+        <div>
+          <strong>การรับบริการ:</strong> พนักงานจะแจ้งรอบเวลา (เช้า/บ่าย/เย็น)<br>
+          ให้ทราบเมื่อคุณมาถึงเคาน์เตอร์ในวันที่จอง<br>
+          กรุณาแสดงหมายเลขคิวแก่พนักงาน
+        </div>
+      </div>
+      <button class="btn-new-booking" onclick="resetForm()">
+        ➕ จองใหม่อีกครั้ง
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───
+// ⚠️ เปลี่ยนเป็น URL ของ Google Apps Script ที่ Deploy แล้ว
+const API_URL = 'https://script.google.com/macros/s/AKfycbwosuHFtZllUp8yiB9mHUuw9Z2rrOMeM4bMA16NqBgqw44SOMdaHvXB7UCDO4Fh9SnQ/exec';
+
+// ─── State ───
+let branchConfig = null;
+let selectedDate = null;
+let isSubmitting = false;
+
+// ─── INIT ───
+window.onload = async () => {
+  const params = new URLSearchParams(window.location.search);
+  const branchId = params.get('branch') || params.get('b');
+
+  if (!branchId) {
+    showError('ไม่พบรหัสสาขา กรุณาสแกน QR Code จากสาขาที่ต้องการ');
+    return;
+  }
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'getConfig', branchId })
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      showError(data.error || 'ไม่สามารถโหลดข้อมูลได้');
+      return;
+    }
+
+    branchConfig = data;
+    renderConfig(data);
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('form-screen').style.display = 'block';
+  } catch (e) {
+    showError('ไม่สามารถเชื่อมต่อระบบได้ กรุณาตรวจสอบ Internet แล้วลองใหม่');
+  }
+};
+
+function showError(msg) {
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('error-screen').style.display = 'block';
+}
+
+// ─── RENDER CONFIG ───
+function renderConfig(cfg) {
+  // Branch info
+  document.title = `จองแบต — ${cfg.branch.name}`;
+  document.getElementById('branch-pill').textContent = '📍 ' + cfg.branch.name;
+  document.getElementById('branch-tel').textContent = cfg.branch.tel || '—';
+
+  // iPhone models
+  const modelSel = document.getElementById('field-model');
+  cfg.models.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.model;
+    opt.dataset.price = m.price;
+    opt.textContent = `${m.model}  (฿${Number(m.price).toLocaleString()})`;
+    modelSel.appendChild(opt);
+  });
+
+  // Available dates
+  renderDateGrid(cfg.availableDates);
+}
+
+function renderDateGrid(dates) {
+  const grid = document.getElementById('date-grid');
+  if (!dates || dates.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#aaa; padding:16px;">ไม่มีวันที่ว่างในขณะนี้</div>';
+    return;
+  }
+  const thDays = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+  const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+  grid.innerHTML = dates.slice(0, 18).map(d => {
+    const dt = new Date(d.date + 'T12:00:00');
+    const isFull = d.slots <= 0;
+    return `
+      <div class="date-option ${isFull ? 'full' : ''}" onclick="selectDate('${d.date}', this)"
+           data-date="${d.date}">
+        <div class="date-day">${thDays[dt.getDay()]}</div>
+        <div class="date-num">${dt.getDate()}</div>
+        <div class="date-month">${thMonths[dt.getMonth()]}</div>
+        <div class="date-slots">${isFull ? 'เต็มแล้ว' : `ว่าง ${d.slots}`}</div>
+      </div>`;
+  }).join('');
+}
+
+function selectDate(dateStr, el) {
+  if (el.classList.contains('full')) return;
+  selectedDate = dateStr;
+  document.querySelectorAll('.date-option').forEach(d => d.classList.remove('selected'));
+  el.classList.add('selected');
+  clearError('err-date');
+}
+
+function onModelChange() {
+  const sel = document.getElementById('field-model');
+  const opt = sel.options[sel.selectedIndex];
+  const priceHint = document.getElementById('model-price-hint');
+  if (opt.value && opt.dataset.price) {
+    document.getElementById('price-display').textContent =
+      `ราคาเปลี่ยน Battery: ฿${Number(opt.dataset.price).toLocaleString()}`;
+    priceHint.style.display = 'flex';
+  } else {
+    priceHint.style.display = 'none';
+  }
+  clearError('err-model');
+}
+
+// ─── SUBMIT ───
+async function doSubmit() {
+  if (isSubmitting) return;
+
+  // Validate
+  let hasError = false;
+  const model = document.getElementById('field-model').value;
+  const firstName = document.getElementById('field-firstname').value.trim();
+  const phone = document.getElementById('field-phone').value.trim();
+
+  if (!model) { showError2('err-model', 'field-model'); hasError = true; }
+  if (!selectedDate) { document.getElementById('err-date').style.display = 'block'; hasError = true; }
+  if (!firstName) { showError2('err-firstname', 'field-firstname'); hasError = true; }
+  if (!phone || !/^[0-9\-+\s]{9,15}$/.test(phone)) { showError2('err-phone', 'field-phone'); hasError = true; }
+  if (hasError) return;
+
+  isSubmitting = true;
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังส่งข้อมูล...';
+
+  try {
+    const body = {
+      action: 'submitBooking',
+      branchId: branchConfig.branch.id,
+      model,
+      firstName,
+      lastName: document.getElementById('field-lastname').value.trim(),
+      phone,
+      email: document.getElementById('field-email').value.trim(),
+      bookingDate: selectedDate,
+      source: 'walk-in'
+    };
+
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      showSuccess(result);
+    } else {
+      btn.disabled = false;
+      btn.textContent = '✅ ยืนยันการจอง';
+      alert('เกิดข้อผิดพลาด: ' + (result.error || 'กรุณาลองใหม่'));
+    }
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '✅ ยืนยันการจอง';
+    alert('ไม่สามารถเชื่อมต่อได้ กรุณาตรวจสอบ Internet แล้วลองใหม่');
+  } finally {
+    isSubmitting = false;
+  }
+}
+
+function showError2(errId, fieldId) {
+  document.getElementById(errId).style.display = 'block';
+  document.getElementById(fieldId).classList.add('field-error');
+  document.getElementById(fieldId).addEventListener('input', () => clearError(errId, fieldId), { once: true });
+}
+
+function clearError(errId, fieldId) {
+  const e = document.getElementById(errId);
+  if (e) e.style.display = 'none';
+  if (fieldId) {
+    const f = document.getElementById(fieldId);
+    if (f) f.classList.remove('field-error');
+  }
+}
+
+// ─── SUCCESS ───
+function showSuccess(result) {
+  document.getElementById('form-screen').style.display = 'none';
+  document.getElementById('success-screen').style.display = 'block';
+  window.scrollTo(0, 0);
+
+  document.getElementById('success-queue').textContent = String(result.queueNo).padStart(3, '0');
+  document.getElementById('success-ref').textContent = 'Ref: ' + result.bookingRef;
+
+  const dt = new Date(result.bookingDate + 'T12:00:00');
+  const thDays = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const thMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const dateLabel = `วัน${thDays[dt.getDay()]}ที่ ${dt.getDate()} ${thMonths[dt.getMonth()]}`;
+
+  document.getElementById('booking-details').innerHTML = `
+    <div class="detail-row">
+      <span class="dlabel">ชื่อ-นามสกุล</span>
+      <span class="dvalue">${result.firstName} ${result.lastName}</span>
+    </div>
+    <div class="detail-row">
+      <span class="dlabel">รุ่น iPhone</span>
+      <span class="dvalue">${result.model}</span>
+    </div>
+    <div class="detail-row">
+      <span class="dlabel">ราคา Battery</span>
+      <span class="dvalue">฿${result.price ? Number(result.price).toLocaleString() : '—'}</span>
+    </div>
+    <div class="detail-row">
+      <span class="dlabel">วันที่จอง</span>
+      <span class="dvalue">${dateLabel}</span>
+    </div>
+    <div class="detail-row">
+      <span class="dlabel">สาขา</span>
+      <span class="dvalue">${branchConfig.branch.name}</span>
+    </div>
+  `;
+}
+
+function resetForm() {
+  document.getElementById('success-screen').style.display = 'none';
+  document.getElementById('form-screen').style.display = 'block';
+  document.getElementById('field-model').value = '';
+  document.getElementById('field-firstname').value = '';
+  document.getElementById('field-lastname').value = '';
+  document.getElementById('field-phone').value = '';
+  document.getElementById('field-email').value = '';
+  document.getElementById('model-price-hint').style.display = 'none';
+  document.querySelectorAll('.date-option').forEach(d => d.classList.remove('selected'));
+  document.getElementById('btn-submit').disabled = false;
+  document.getElementById('btn-submit').textContent = '✅ ยืนยันการจอง';
+  selectedDate = null;
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>

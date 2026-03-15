@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iCare Battery Booking — Staff</title>
+<style>
+/* ─── Reset & Base ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
+
+/* ─── Login ─── */
+#login-screen {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+.login-card {
+  background: #fff; border-radius: 20px; padding: 48px 40px; width: 360px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+}
+.login-logo { text-align: center; margin-bottom: 28px; }
+.login-logo .logo-icon { font-size: 48px; }
+.login-logo h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-top: 8px; }
+.login-logo p { font-size: 13px; color: #888; margin-top: 4px; }
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+.form-group input {
+  width: 100%; padding: 12px 16px; border: 2px solid #e8e8e8; border-radius: 10px;
+  font-size: 15px; transition: border-color 0.2s; outline: none;
+}
+.form-group input:focus { border-color: #0f3460; }
+.btn-login {
+  width: 100%; padding: 14px; background: linear-gradient(135deg, #0f3460, #533483);
+  color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+  cursor: pointer; transition: opacity 0.2s;
+}
+.btn-login:hover { opacity: 0.9; }
+.login-error {
+  background: #fff0f0; color: #d32f2f; padding: 10px 14px; border-radius: 8px;
+  font-size: 13px; text-align: center; margin-top: 12px; display: none;
+}
+
+/* ─── Main App ─── */
+#main-app { display: none; }
+
+/* ─── Header ─── */
+.app-header {
+  background: linear-gradient(135deg, #1a1a2e, #0f3460);
+  color: #fff; padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 60px; position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-left .logo { font-size: 20px; }
+.header-left .branch-name { font-size: 15px; font-weight: 700; }
+.header-left .branch-id { font-size: 12px; opacity: 0.7; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.notification-bell {
+  position: relative; cursor: pointer; font-size: 22px;
+  background: none; border: none; color: #fff; padding: 4px;
+}
+.notif-badge {
+  position: absolute; top: -4px; right: -4px;
+  background: #ff4757; color: #fff; border-radius: 50%;
+  font-size: 10px; font-weight: 700; min-width: 18px; height: 18px;
+  display: none; align-items: center; justify-content: center;
+}
+.btn-logout {
+  background: rgba(255,255,255,0.15); border: none; color: #fff;
+  padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-logout:hover { background: rgba(255,255,255,0.25); }
+
+/* ─── Control Bar ─── */
+.control-bar {
+  background: #fff; padding: 14px 24px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  border-bottom: 1px solid #e8e8e8;
+}
+.date-picker-group { display: flex; align-items: center; gap: 8px; }
+.date-picker-group label { font-size: 13px; font-weight: 600; color: #555; }
+.date-picker-group input[type="date"] {
+  padding: 8px 12px; border: 2px solid #e8e8e8; border-radius: 8px;
+  font-size: 14px; cursor: pointer; outline: none; transition: border-color 0.2s;
+}
+.date-picker-group input[type="date"]:focus { border-color: #0f3460; }
+.btn-refresh {
+  padding: 8px 16px; background: #f0f2f5; border: 1px solid #ddd; border-radius: 8px;
+  font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: background 0.2s;
+}
+.btn-refresh:hover { background: #e0e2e5; }
+.poll-status { font-size: 12px; color: #aaa; margin-left: auto; }
+
+/* ─── Stats Bar ─── */
+.stats-bar {
+  display: flex; gap: 12px; padding: 16px 24px; flex-wrap: wrap;
+  background: #f8f9fb;
+}
+.stat-card {
+  background: #fff; border-radius: 12px; padding: 14px 20px;
+  min-width: 100px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  flex: 1;
+}
+.stat-card .stat-number { font-size: 28px; font-weight: 800; line-height: 1; }
+.stat-card .stat-label { font-size: 12px; color: #888; margin-top: 4px; }
+.stat-total .stat-number { color: #1a1a2e; }
+.stat-unassigned .stat-number { color: #ff9800; }
+.stat-morning .stat-number { color: #e65100; }
+.stat-afternoon .stat-number { color: #1565c0; }
+.stat-evening .stat-number { color: #6a1b9a; }
+.stat-done .stat-number { color: #2e7d32; }
+
+/* ─── Filter Tabs ─── */
+.filter-tabs {
+  display: flex; gap: 0; padding: 0 24px; background: #fff;
+  border-bottom: 2px solid #e8e8e8; overflow-x: auto;
+}
+.tab-btn {
+  padding: 12px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+  border: none; background: none; color: #888; white-space: nowrap;
+  border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s;
+}
+.tab-btn:hover { color: #0f3460; }
+.tab-btn.active { color: #0f3460; border-bottom-color: #0f3460; }
+
+/* ─── Queue List ─── */
+.queue-container { padding: 20px 24px; }
+.queue-empty {
+  text-align: center; padding: 60px 24px; color: #bbb;
+  font-size: 16px;
+}
+.queue-empty .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+/* ─── Queue Card ─── */
+.queue-card {
+  background: #fff; border-radius: 14px; padding: 16px 20px;
+  margin-bottom: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  border-left: 5px solid #e8e8e8; transition: all 0.3s;
+  animation: slideIn 0.3s ease;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.queue-card.new-card { border-left-color: #ff4757; animation: pulse 1s ease 3; }
+@keyframes pulse { 0%,100% { box-shadow: 0 2px 10px rgba(0,0,0,0.06); } 50% { box-shadow: 0 4px 20px rgba(255,71,87,0.4); } }
+.queue-card.status-ยืนยัน { border-left-color: #1565c0; }
+.queue-card.status-เสร็จ { border-left-color: #2e7d32; opacity: 0.75; }
+.queue-card.status-ยกเลิก { border-left-color: #bbb; opacity: 0.5; }
+
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.queue-number {
+  background: #1a1a2e; color: #fff; border-radius: 10px;
+  width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 800; flex-shrink: 0;
+}
+.customer-info { flex: 1; }
+.customer-name { font-size: 17px; font-weight: 700; color: #1a1a2e; }
+.customer-phone { font-size: 13px; color: #888; margin-top: 2px; }
+.customer-source { font-size: 11px; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-top: 4px; }
+.source-walk-in { background: #e3f2fd; color: #1565c0; }
+.source-online { background: #f3e5f5; color: #6a1b9a; }
+
+.card-model { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.model-badge {
+  background: #f0f2f5; color: #333; padding: 5px 12px; border-radius: 20px;
+  font-size: 13px; font-weight: 600;
+}
+.price-badge {
+  background: #e8f5e9; color: #2e7d32; padding: 5px 12px; border-radius: 20px;
+  font-size: 13px; font-weight: 700;
+}
+.booking-date { font-size: 12px; color: #aaa; margin-left: auto; }
+
+/* ─── Session Buttons ─── */
+.session-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.btn-session {
+  flex: 1; min-width: 90px; padding: 10px 8px; border: 2px solid #e8e8e8;
+  border-radius: 10px; background: #f8f9fb; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; text-align: center;
+}
+.btn-session:hover { border-color: #0f3460; background: #e8eaf6; }
+.btn-session.selected-เช้า { background: #fff3e0; border-color: #e65100; color: #e65100; }
+.btn-session.selected-บ่าย { background: #e3f2fd; border-color: #1565c0; color: #1565c0; }
+.btn-session.selected-เย็น { background: #f3e5f5; border-color: #6a1b9a; color: #6a1b9a; }
+.session-time-hint { font-size: 11px; color: #aaa; margin-top: 4px; display: block; }
+
+/* ─── Action Buttons ─── */
+.action-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-done {
+  padding: 8px 16px; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7;
+  border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.btn-done:hover { background: #c8e6c9; }
+.btn-cancel {
+  padding: 8px 16px; background: #fafafa; color: #888; border: 1px solid #ddd;
+  border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.2s;
+}
+.btn-cancel:hover { background: #f5f5f5; color: #d32f2f; border-color: #ef9a9a; }
+.btn-print {
+  padding: 8px 16px; background: #e8eaf6; color: #3949ab; border: 1px solid #9fa8da;
+  border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  margin-left: auto;
+}
+.btn-print:hover { background: #c5cae9; }
+
+/* ─── Status Badge ─── */
+.status-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
+}
+.badge-รอ { background: #fff8e1; color: #f57f17; }
+.badge-ยืนยัน { background: #e3f2fd; color: #1565c0; }
+.badge-เสร็จ { background: #e8f5e9; color: #2e7d32; }
+.badge-ยกเลิก { background: #f5f5f5; color: #9e9e9e; }
+
+/* ─── Toast Notification ─── */
+.toast-container {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 10px; max-width: 340px;
+}
+.toast {
+  background: #1a1a2e; color: #fff; border-radius: 12px;
+  padding: 14px 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  animation: toastIn 0.4s ease; font-size: 14px;
+  display: flex; align-items: flex-start; gap: 12px;
+}
+@keyframes toastIn { from { opacity:0; transform: translateX(60px); } to { opacity:1; transform: translateX(0); } }
+.toast-icon { font-size: 24px; flex-shrink: 0; }
+.toast-body .toast-title { font-weight: 700; font-size: 15px; }
+.toast-body .toast-sub { font-size: 12px; opacity: 0.75; margin-top: 3px; }
+
+/* ─── Loading Overlay ─── */
+.loading-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  display: none; align-items: center; justify-content: center; z-index: 9000;
+}
+.spinner {
+  width: 48px; height: 48px; border: 5px solid rgba(255,255,255,0.3);
+  border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Print Styles ─── */
+@media print {
+  body > *:not(#print-area) { display: none !important; }
+  #print-area { display: block !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+#print-area {
+  display: none;
+  font-family: 'Sarabun', 'TH SarabunNew', Arial, sans-serif;
+}
+.print-slip {
+  width: 210mm; margin: 15mm auto; padding: 15mm;
+  border: 2px solid #1a1a2e; border-radius: 8px;
+}
+.print-header { text-align: center; border-bottom: 2px solid #1a1a2e; padding-bottom: 12px; margin-bottom: 16px; }
+.print-header .print-campaign { font-size: 22pt; font-weight: 900; color: #1a1a2e; }
+.print-header .print-sub { font-size: 14pt; color: #555; }
+.print-header .print-branch { font-size: 13pt; color: #333; margin-top: 4px; }
+.print-queue-no {
+  text-align: center; font-size: 64pt; font-weight: 900;
+  color: #1a1a2e; line-height: 1; margin: 10px 0;
+}
+.print-queue-label { text-align: center; font-size: 14pt; color: #888; margin-bottom: 16px; }
+.print-divider { border: none; border-top: 1px dashed #aaa; margin: 14px 0; }
+.print-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13pt; }
+.print-row .label { color: #555; }
+.print-row .value { font-weight: 700; color: #1a1a2e; }
+.print-session-box {
+  margin: 16px 0; background: #1a1a2e; color: #fff;
+  border-radius: 8px; padding: 14px; text-align: center;
+}
+.print-session-box .session-label { font-size: 20pt; font-weight: 900; }
+.print-session-box .session-time { font-size: 14pt; margin-top: 4px; opacity: 0.85; }
+.print-footer {
+  text-align: center; margin-top: 20px; font-size: 11pt;
+  color: #888; border-top: 1px solid #ddd; padding-top: 12px;
+}
+.print-ref { font-size: 10pt; color: #aaa; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ─── LOGIN SCREEN ─── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-icon">🔋</div>
+      <h1>iCare Battery</h1>
+      <p>Staff Management System</p>
+    </div>
+    <div class="form-group">
+      <label>Branch ID</label>
+      <input type="number" id="input-branch-id" placeholder="เช่น 603" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="input-password" placeholder="รหัสผ่านสาขา" autocomplete="current-password">
+    </div>
+    <button class="btn-login" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ─── MAIN APP ─── -->
+<div id="main-app">
+  <!-- Header -->
+  <div class="app-header">
+    <div class="header-left">
+      <span class="logo">🔋</span>
+      <div>
+        <div class="branch-name" id="header-branch-name">—</div>
+        <div class="branch-id" id="header-branch-id">—</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="notification-bell" onclick="toggleNotifPanel()" title="การแจ้งเตือน">
+        🔔
+        <div class="notif-badge" id="notif-badge">0</div>
+      </button>
+      <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <!-- Control Bar -->
+  <div class="control-bar">
+    <div class="date-picker-group">
+      <label>📅 วันที่</label>
+      <input type="date" id="date-picker" onchange="loadBookings()">
+    </div>
+    <button class="btn-refresh" onclick="loadBookings()">
+      🔄 รีเฟรช
+    </button>
+    <span class="poll-status" id="poll-status">● Live</span>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat-card stat-total">
+      <div class="stat-number" id="stat-total">0</div>
+      <div class="stat-label">จองทั้งหมด</div>
+    </div>
+    <div class="stat-card stat-unassigned">
+      <div class="stat-number" id="stat-unassigned">0</div>
+      <div class="stat-label">ยังไม่กำหนด</div>
+    </div>
+    <div class="stat-card stat-morning">
+      <div class="stat-number" id="stat-morning">0</div>
+      <div class="stat-label">🌅 เช้า</div>
+    </div>
+    <div class="stat-card stat-afternoon">
+      <div class="stat-number" id="stat-afternoon">0</div>
+      <div class="stat-label">🌞 บ่าย</div>
+    </div>
+    <div class="stat-card stat-evening">
+      <div class="stat-number" id="stat-evening">0</div>
+      <div class="stat-label">🌆 เย็น</div>
+    </div>
+    <div class="stat-card stat-done">
+      <div class="stat-number" id="stat-done">0</div>
+      <div class="stat-label">✅ เสร็จ</div>
+    </div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="filter-tabs">
+    <button class="tab-btn active" onclick="setFilter('all', this)">ทั้งหมด</button>
+    <button class="tab-btn" onclick="setFilter('ยังไม่กำหนด', this)">⏳ ยังไม่กำหนด</button>
+    <button class="tab-btn" onclick="setFilter('เช้า', this)">🌅 เช้า</button>
+    <button class="tab-btn" onclick="setFilter('บ่าย', this)">🌞 บ่าย</button>
+    <button class="tab-btn" onclick="setFilter('เย็น', this)">🌆 เย็น</button>
+    <button class="tab-btn" onclick="setFilter('เสร็จ', this)">✅ เสร็จ</button>
+  </div>
+
+  <!-- Queue List -->
+  <div class="queue-container" id="queue-container">
+    <div class="queue-empty">
+      <div class="empty-icon">📋</div>
+      กำลังโหลดข้อมูล...
+    </div>
+  </div>
+</div>
+
+<!-- ─── PRINT AREA ─── -->
+<div id="print-area">
+  <div class="print-slip" id="print-slip-content"></div>
+</div>
+
+<!-- ─── TOAST CONTAINER ─── -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ─── LOADING OVERLAY ─── -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+</div>
+
+<script>
+// ─── CONFIG ───
+// ⚠️ เปลี่ยนเป็น URL ของ Google Apps Script ที่ Deploy แล้ว
+const API_URL = 'https://script.google.com/macros/s/AKfycbwosuHFtZllUp8yiB9mHUuw9Z2rrOMeM4bMA16NqBgqw44SOMdaHvXB7UCDO4Fh9SnQ/exec';
+
+const SESSIONS = {
+  'เช้า':  { time: '11:00 – 13:00 น.', start: '11:00', icon: '🌅' },
+  'บ่าย':  { time: '13:00 – 16:00 น.', start: '13:00', icon: '🌞' },
+  'เย็น':  { time: '16:00 – 19:00 น.', start: '16:00', icon: '🌆' }
+};
+
+// ─── State ───
+let currentBranch = null;
+let currentPassword = null;
+let allBookings = [];
+let currentFilter = 'all';
+let pollInterval = null;
+let lastTimestamp = null;
+let newCount = 0;
+const newCardRefs = new Set();
+
+// ─── API ───
+async function apiCall(action, params = {}) {
+  const body = { action, ...params };
+  if (currentBranch) body.branchId = currentBranch.id;
+  if (currentPassword) body.password = currentPassword;
+
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return await res.json();
+}
+
+// ─── LOGIN ───
+async function doLogin() {
+  const branchId = document.getElementById('input-branch-id').value.trim();
+  const password = document.getElementById('input-password').value.trim();
+  if (!branchId || !password) {
+    showLoginError('กรุณากรอก Branch ID และ Password');
+    return;
+  }
+
+  showLoading(true);
+  try {
+    const result = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'login', branchId, password })
+    }).then(r => r.json());
+
+    if (result.success) {
+      currentBranch = result.branch;
+      currentPassword = password;
+      localStorage.setItem('icare_branch', JSON.stringify({ branch: result.branch, password }));
+      showLoginError('');
+      showMainApp();
+    } else {
+      showLoginError(result.error || 'เข้าสู่ระบบไม่สำเร็จ');
+    }
+  } catch (e) {
+    showLoginError('ไม่สามารถเชื่อมต่อระบบได้ กรุณาตรวจสอบ Internet');
+  } finally {
+    showLoading(false);
+  }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+function doLogout() {
+  localStorage.removeItem('icare_branch');
+  currentBranch = null;
+  currentPassword = null;
+  allBookings = [];
+  if (pollInterval) clearInterval(pollInterval);
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.title = 'iCare Battery — Staff';
+}
+
+// ─── MAIN APP ───
+function showMainApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+  document.getElementById('header-branch-name').textContent = currentBranch.name;
+  document.getElementById('header-branch-id').textContent = 'Branch ' + currentBranch.id;
+
+  // Set default date to today
+  const today = new Date();
+  const dateStr = today.toISOString().split('T')[0];
+  document.getElementById('date-picker').value = dateStr;
+
+  lastTimestamp = new Date().toISOString();
+  loadBookings();
+  startPolling();
+}
+
+// ─── LOAD BOOKINGS ───
+async function loadBookings() {
+  const date = document.getElementById('date-picker').value;
+  if (!date) return;
+
+  showLoading(true);
+  try {
+    const [bookResult, statsResult] = await Promise.all([
+      apiCall('getBookings', { date }),
+      apiCall('getSlotSummary', { date })
+    ]);
+
+    if (bookResult.success) {
+      allBookings = bookResult.bookings;
+      renderQueue();
+    }
+    if (statsResult.success) {
+      updateStats(statsResult.counts, statsResult.totalSlots);
+    }
+  } catch (e) {
+    showToast('⚠️', 'ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้');
+  } finally {
+    showLoading(false);
+  }
+}
+
+function updateStats(counts, totalSlots) {
+  document.getElementById('stat-total').textContent = counts.total || 0;
+  document.getElementById('stat-unassigned').textContent = counts.ยังไม่กำหนด || 0;
+  document.getElementById('stat-morning').textContent = counts.เช้า || 0;
+  document.getElementById('stat-afternoon').textContent = counts.บ่าย || 0;
+  document.getElementById('stat-evening').textContent = counts.เย็น || 0;
+  document.getElementById('stat-done').textContent = counts.เสร็จ || 0;
+}
+
+// ─── RENDER QUEUE ───
+function renderQueue() {
+  const container = document.getElementById('queue-container');
+  let filtered = allBookings.filter(b => {
+    if (currentFilter === 'all') return b.status !== 'ยกเลิก';
+    if (currentFilter === 'ยังไม่กำหนด') return !b.session && b.status !== 'ยกเลิก';
+    if (currentFilter === 'เสร็จ') return b.status === 'เสร็จ';
+    return b.session === currentFilter && b.status !== 'ยกเลิก';
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="queue-empty"><div class="empty-icon">📋</div>ไม่มีรายการในหมวดนี้</div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(b => renderCard(b)).join('');
+}
+
+function renderCard(b) {
+  const isNew = newCardRefs.has(b.bookingRef);
+  const sessionClass = b.session ? `selected-${b.session}` : '';
+  const sourceBadge = b.source === 'online'
+    ? '<span class="customer-source source-online">🌐 Online</span>'
+    : '<span class="customer-source source-walk-in">🏪 Walk-in</span>';
+
+  const sessionBtns = Object.entries(SESSIONS).map(([key, val]) => `
+    <button class="btn-session ${b.session === key ? 'selected-' + key : ''}"
+      onclick="doAssignSession('${b.bookingRef}', '${key}', this)"
+      ${b.status === 'เสร็จ' || b.status === 'ยกเลิก' ? 'disabled' : ''}>
+      ${val.icon} ${key}
+      <span class="session-time-hint">${val.start} น.</span>
+    </button>
+  `).join('');
+
+  const price = b.price ? `฿${Number(b.price).toLocaleString()}` : '—';
+
+  return `
+    <div class="queue-card status-${b.status} ${isNew ? 'new-card' : ''}" id="card-${b.bookingRef}">
+      <div class="card-top">
+        <div class="queue-number">${b.queueNo}</div>
+        <div class="customer-info">
+          <div class="customer-name">${b.firstName} ${b.lastName}</div>
+          <div class="customer-phone">📞 ${b.phone}</div>
+          ${sourceBadge}
+        </div>
+        <span class="status-badge badge-${b.status}">${getStatusDot(b.status)} ${b.status}</span>
+      </div>
+      <div class="card-model">
+        <span class="model-badge">📱 ${b.model}</span>
+        <span class="price-badge">฿${b.price ? Number(b.price).toLocaleString() : '—'}</span>
+        <span class="booking-date">📅 ${formatDate(b.bookingDate)}</span>
+      </div>
+      <div class="session-group">${sessionBtns}</div>
+      <div class="action-group">
+        <button class="btn-done" onclick="doUpdateStatus('${b.bookingRef}', 'เสร็จ')"
+          ${b.status === 'เสร็จ' || b.status === 'ยกเลิก' ? 'disabled style="opacity:0.4"' : ''}>
+          ✅ เสร็จแล้ว
+        </button>
+        <button class="btn-cancel" onclick="doUpdateStatus('${b.bookingRef}', 'ยกเลิก')"
+          ${b.status === 'เสร็จ' || b.status === 'ยกเลิก' ? 'disabled style="opacity:0.4"' : ''}>
+          ❌ ยกเลิก
+        </button>
+        <button class="btn-print" onclick="doPrint(${JSON.stringify(b).replace(/"/g, '&quot;')})">
+          🖨️ พิมพ์ใบจอง
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function getStatusDot(status) {
+  return { 'รอ': '🟡', 'ยืนยัน': '🔵', 'เสร็จ': '🟢', 'ยกเลิก': '⚪' }[status] || '⚪';
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d + 'T12:00:00');
+  return dt.toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: '2-digit' });
+}
+
+// ─── ASSIGN SESSION ───
+async function doAssignSession(bookingRef, session, btn) {
+  try {
+    const result = await apiCall('assignSession', { bookingRef, session, staffName: 'Staff' });
+    if (result.success) {
+      const idx = allBookings.findIndex(b => b.bookingRef === bookingRef);
+      if (idx !== -1) {
+        allBookings[idx] = result.booking;
+        renderQueue();
+        updateStatsFromBookings();
+      }
+      showToast(SESSIONS[session].icon, `กำหนด ${session} แล้ว`, `คิว #${result.booking.queueNo} — ${result.booking.firstName}`);
+    } else {
+      showToast('⚠️', 'ข้อผิดพลาด', result.error);
+    }
+  } catch (e) {
+    showToast('⚠️', 'ข้อผิดพลาด', 'ไม่สามารถบันทึกได้');
+  }
+}
+
+// ─── UPDATE STATUS ───
+async function doUpdateStatus(bookingRef, status) {
+  const label = status === 'เสร็จ' ? 'ยืนยันว่าเสร็จแล้ว?' : 'ยืนยันยกเลิก?';
+  if (!confirm(label)) return;
+
+  try {
+    const result = await apiCall('updateStatus', { bookingRef, status });
+    if (result.success) {
+      const idx = allBookings.findIndex(b => b.bookingRef === bookingRef);
+      if (idx !== -1) { allBookings[idx].status = status; renderQueue(); updateStatsFromBookings(); }
+    } else {
+      showToast('⚠️', 'ข้อผิดพลาด', result.error);
+    }
+  } catch (e) {
+    showToast('⚠️', 'ข้อผิดพลาด', 'ไม่สามารถบันทึกได้');
+  }
+}
+
+function updateStatsFromBookings() {
+  const counts = { total: 0, เช้า: 0, บ่าย: 0, เย็น: 0, ยังไม่กำหนด: 0, เสร็จ: 0 };
+  allBookings.forEach(b => {
+    if (b.status === 'ยกเลิก') return;
+    counts.total++;
+    if (b.session) counts[b.session] = (counts[b.session] || 0) + 1;
+    else counts.ยังไม่กำหนด++;
+    if (b.status === 'เสร็จ') counts.เสร็จ++;
+  });
+  updateStats(counts, 0);
+}
+
+// ─── FILTER ───
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderQueue();
+}
+
+// ─── POLLING / NOTIFICATION ───
+function startPolling() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(pollNewBookings, 10000); // every 10 seconds
+  document.getElementById('poll-status').innerHTML = '🟢 Live';
+}
+
+async function pollNewBookings() {
+  try {
+    const result = await apiCall('getNewBookings', { lastTimestamp });
+    if (result.success && result.newBookings.length > 0) {
+      const today = document.getElementById('date-picker').value;
+      const todayNew = result.newBookings.filter(b => b.bookingDate === today);
+
+      todayNew.forEach(b => {
+        if (!allBookings.find(x => x.bookingRef === b.bookingRef)) {
+          allBookings.push(b);
+          allBookings.sort((a, x) => a.queueNo - x.queueNo);
+          newCardRefs.add(b.bookingRef);
+          setTimeout(() => newCardRefs.delete(b.bookingRef), 8000);
+        }
+      });
+
+      if (todayNew.length > 0) {
+        renderQueue();
+        updateStatsFromBookings();
+        todayNew.forEach(b => {
+          const isToday = b.bookingDate === today;
+          showToast(
+            '🔔',
+            `ลูกค้าใหม่! คิว #${b.queueNo}`,
+            `${b.firstName} ${b.lastName} — ${b.model}${isToday ? '\n⚡ เรียกเข้าเคาน์เตอร์ได้เลย' : ''}`
+          );
+        });
+        playNotificationSound();
+        addNotifCount(todayNew.length);
+        updatePageTitle();
+      }
+      lastTimestamp = new Date().toISOString();
+    }
+  } catch (e) {
+    document.getElementById('poll-status').innerHTML = '🔴 ขาดการเชื่อมต่อ';
+    setTimeout(() => document.getElementById('poll-status').innerHTML = '🟢 Live', 5000);
+  }
+}
+
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 150, 300].forEach((delay, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = [880, 1100, 880][i];
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.25, ctx.currentTime + delay/1000);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay/1000 + 0.25);
+      osc.start(ctx.currentTime + delay/1000);
+      osc.stop(ctx.currentTime + delay/1000 + 0.25);
+    });
+  } catch(e) {}
+}
+
+function addNotifCount(n) {
+  newCount += n;
+  const badge = document.getElementById('notif-badge');
+  badge.textContent = newCount;
+  badge.style.display = 'flex';
+}
+
+function toggleNotifPanel() {
+  newCount = 0;
+  const badge = document.getElementById('notif-badge');
+  badge.style.display = 'none';
+  updatePageTitle();
+}
+
+function updatePageTitle() {
+  document.title = newCount > 0
+    ? `[${newCount}] iCare Battery — Staff`
+    : 'iCare Battery — Staff';
+}
+
+// ─── TOAST ───
+function showToast(icon, title, sub) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-body">
+      <div class="toast-title">${title}</div>
+      <div class="toast-sub">${sub.replace(/\n/g, '<br>')}</div>
+    </div>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s'; setTimeout(() => toast.remove(), 500); }, 5000);
+}
+
+// ─── PRINT ───
+function doPrint(booking) {
+  const session = booking.session;
+  const sessionInfo = session ? SESSIONS[session] : null;
+  const sessionBlock = sessionInfo
+    ? `<div class="print-session-box">
+        <div class="session-label">${sessionInfo.icon} Session ${session}</div>
+        <div class="session-time">กรุณาเข้าเคาน์เตอร์เวลา ${sessionInfo.start} น.</div>
+        <div class="session-time">(${sessionInfo.time})</div>
+       </div>`
+    : `<div class="print-session-box" style="background:#f57f17">
+        <div class="session-label">⏳ ยังไม่กำหนด Session</div>
+        <div class="session-time">กรุณาติดต่อพนักงาน</div>
+       </div>`;
+
+  document.getElementById('print-slip-content').innerHTML = `
+    <div class="print-header">
+      <div class="print-campaign">🔋 Final Call Battery 2025</div>
+      <div class="print-sub">iCare — Apple Authorized Service Provider</div>
+      <div class="print-branch">สาขา: ${currentBranch.name}</div>
+    </div>
+    <div class="print-queue-no">${String(booking.queueNo).padStart(3,'0')}</div>
+    <div class="print-queue-label">หมายเลขคิว</div>
+    <hr class="print-divider">
+    <div class="print-row"><span class="label">ชื่อ-นามสกุล</span><span class="value">${booking.firstName} ${booking.lastName}</span></div>
+    <div class="print-row"><span class="label">เบอร์โทรศัพท์</span><span class="value">${booking.phone}</span></div>
+    <div class="print-row"><span class="label">รุ่น iPhone</span><span class="value">${booking.model}</span></div>
+    <div class="print-row"><span class="label">ราคา Battery</span><span class="value">฿${booking.price ? Number(booking.price).toLocaleString() : '—'}</span></div>
+    <div class="print-row"><span class="label">วันที่จอง</span><span class="value">${formatDate(booking.bookingDate)}</span></div>
+    ${sessionBlock}
+    <hr class="print-divider">
+    <div class="print-footer">
+      ขอบคุณที่ใช้บริการ iCare — กรุณาแสดงใบนี้แก่พนักงาน
+    </div>
+    <div class="print-ref">Ref: ${booking.bookingRef}</div>
+  `;
+
+  window.print();
+}
+
+// ─── LOADING ───
+function showLoading(show) {
+  document.getElementById('loading').style.display = show ? 'flex' : 'none';
+}
+
+// ─── AUTO-RESTORE SESSION ───
+window.onload = () => {
+  // Enter key on login
+  document.getElementById('input-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  // Try restore session
+  const saved = localStorage.getItem('icare_branch');
+  if (saved) {
+    try {
+      const { branch, password } = JSON.parse(saved);
+      currentBranch = branch;
+      currentPassword = password;
+      document.getElementById('input-branch-id').value = branch.id;
+      document.getElementById('input-password').value = password;
+      showMainApp();
+    } catch (e) { localStorage.removeItem('icare_branch'); }
+  }
+};
+</script>
+</body>
+</html>
