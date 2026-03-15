@@ -205,7 +205,8 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
     </div>
     <div class="header-actions">
       <span class="last-update" id="last-update">—</span>
-      <button class="btn-refresh-dash" onclick="loadStats()">🔄 รีเฟรช</button>
+      <span class="last-update" id="next-refresh-label" style="font-size:11px;opacity:0.5;display:none;"></span>
+      <button class="btn-refresh-dash" onclick="loadStats(); resetRefreshTimer();">🔄 รีเฟรช</button>
       <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
     </div>
   </div>
@@ -348,6 +349,26 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbyEpK7728aBIGtaIi6VtQVK_jw7KBHjp-ztZzadZAH3TmS8oaTQBWVvsDRMW0IweJvb/exec';
 let dashPassword = '';
+let refreshCountdown = 600;
+let countdownInterval = null;
+const AUTO_REFRESH_SECS = 600; // 10 นาที
+
+function resetRefreshTimer() {
+  refreshCountdown = AUTO_REFRESH_SECS;
+  const label = document.getElementById('next-refresh-label');
+  if (countdownInterval) clearInterval(countdownInterval);
+  label.style.display = 'inline';
+  countdownInterval = setInterval(() => {
+    refreshCountdown--;
+    const m = Math.floor(refreshCountdown / 60);
+    const s = refreshCountdown % 60;
+    label.textContent = `🔄 อัตโนมัติใน ${m}:${String(s).padStart(2,'0')}`;
+    if (refreshCountdown <= 0) {
+      loadStats();
+      refreshCountdown = AUTO_REFRESH_SECS;
+    }
+  }, 1000);
+}
 
 // ─── LOGIN ───
 async function doLogin() {
@@ -369,6 +390,7 @@ async function doLogin() {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('dashboard').style.display = 'block';
       renderStats(data);
+      resetRefreshTimer();
     } else {
       const el = document.getElementById('login-error');
       el.textContent = data.error || 'รหัสผ่านไม่ถูกต้อง';
@@ -520,7 +542,7 @@ window.onload = () => {
   if (saved) {
     dashPassword = saved;
     document.getElementById('dash-password').value = saved;
-    doLogin();
+    doLogin(); // resetRefreshTimer() จะถูกเรียกใน doLogin() เมื่อสำเร็จ
   }
 };
 </script>
