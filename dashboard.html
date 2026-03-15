@@ -131,13 +131,14 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 .done-rate { font-size: 12px; color: #aaa; }
 
 /* ─── Progress Bar ─── */
-.progress-section { margin-bottom: 28px; }
+.progress-section { margin-bottom: 24px; }
 .progress-card {
   background: #fff; border-radius: 16px; padding: 24px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
 .progress-label-row {
-  display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;
+  display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px;
+  flex-wrap: wrap; gap: 4px;
 }
 .progress-track {
   height: 20px; background: #f0f2f5; border-radius: 10px; overflow: hidden;
@@ -151,6 +152,11 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 }
 .legend-item { display: flex; align-items: center; gap: 6px; }
 .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+/* Receipt progress colors */
+.progress-fill-deposit { background: #1565c0; }
+.progress-fill-sale { background: #2e7d32; }
+.progress-fill-both { background: #6a1b9a; }
+.progress-fill-rec-none { background: #e0e0e0; }
 
 /* ─── Loading ─── */
 .loading-overlay {
@@ -255,6 +261,33 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
           <div class="legend-item"><div class="legend-dot" style="background:#2e7d32"></div>เสร็จแล้ว</div>
           <div class="legend-item"><div class="legend-dot" style="background:#ff9800"></div>รอดำเนินการ</div>
           <div class="legend-item"><div class="legend-dot" style="background:#e0e0e0"></div>ยกเลิก</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Receipt Progress -->
+    <div class="progress-section">
+      <div class="progress-card">
+        <div class="section-header" style="margin-bottom:12px;">
+          <div class="section-title" style="font-size:15px;">🧾 สัดส่วนใบเสร็จ รวมทุกสาขา</div>
+        </div>
+        <div class="progress-label-row">
+          <span id="rec-deposit-label">🧾 มัดจำ 0</span>
+          <span id="rec-sale-label">🧾 ขาย 0</span>
+          <span id="rec-both-label">✅ ทั้งคู่ 0</span>
+          <span id="rec-none-label">⏳ ยังไม่มี 0</span>
+        </div>
+        <div class="progress-track" id="receipt-progress-track">
+          <div class="progress-fill-deposit" id="rec-deposit" style="width:0%"></div>
+          <div class="progress-fill-sale" id="rec-sale" style="width:0%"></div>
+          <div class="progress-fill-both" id="rec-both" style="width:0%"></div>
+          <div class="progress-fill-rec-none" id="rec-none" style="width:0%"></div>
+        </div>
+        <div class="progress-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#1565c0"></div>ใบมัดจำเท่านั้น</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#2e7d32"></div>ใบขายเท่านั้น</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#6a1b9a"></div>ทั้งสองใบ</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#e0e0e0"></div>ยังไม่มีใบเสร็จ</div>
         </div>
       </div>
     </div>
@@ -450,6 +483,26 @@ function renderStats(data) {
           </td>
         </tr>`;
       }).join('');
+
+  // Receipt breakdown
+  if (data.receiptStats) {
+    const rs = data.receiptStats;
+    const totalRec = (rs.withDeposit || 0) + (rs.withSale || 0) + (rs.withBoth || 0) + (rs.withNone || 0) || 1;
+    const depPct  = ((rs.withDeposit || 0) / totalRec * 100).toFixed(1);
+    const salePct = ((rs.withSale || 0)    / totalRec * 100).toFixed(1);
+    const bothPct = ((rs.withBoth || 0)    / totalRec * 100).toFixed(1);
+    const nonePct = ((rs.withNone || 0)    / totalRec * 100).toFixed(1);
+
+    document.getElementById('rec-deposit').style.width = depPct + '%';
+    document.getElementById('rec-sale').style.width = salePct + '%';
+    document.getElementById('rec-both').style.width = bothPct + '%';
+    document.getElementById('rec-none').style.width = nonePct + '%';
+
+    document.getElementById('rec-deposit-label').textContent = `🧾 มัดจำ ${(rs.withDeposit||0).toLocaleString()} (${depPct}%)`;
+    document.getElementById('rec-sale-label').textContent    = `🧾 ขาย ${(rs.withSale||0).toLocaleString()} (${salePct}%)`;
+    document.getElementById('rec-both-label').textContent    = `✅ ทั้งคู่ ${(rs.withBoth||0).toLocaleString()} (${bothPct}%)`;
+    document.getElementById('rec-none-label').textContent    = `⏳ ยังไม่มี ${(rs.withNone||0).toLocaleString()} (${nonePct}%)`;
+  }
 
   // Last update
   const now = new Date(data.updatedAt);
