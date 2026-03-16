@@ -388,6 +388,80 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
   transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
 }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+/* ─── Slot Calendar Modal ─── */
+.cal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: none; align-items: center; justify-content: center;
+  z-index: 8000; padding: 16px;
+}
+.cal-overlay.open { display: flex; }
+.cal-modal {
+  background: #fff; border-radius: 18px; padding: 24px;
+  width: 100%; max-width: 480px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.35); animation: calIn 0.25s ease;
+}
+@keyframes calIn { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
+.cal-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+}
+.cal-title { font-size: 17px; font-weight: 800; color: #1a1a2e; }
+.cal-nav { display: flex; gap: 6px; align-items: center; }
+.cal-nav button {
+  background: #f0f2f5; border: none; border-radius: 8px;
+  width: 32px; height: 32px; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
+}
+.cal-nav button:hover { background: #e0e2e5; }
+.cal-month-label { font-size: 14px; font-weight: 700; color: #555; min-width: 100px; text-align: center; }
+.cal-close {
+  background: none; border: none; font-size: 20px; cursor: pointer;
+  color: #888; padding: 4px; border-radius: 6px; transition: color 0.2s;
+}
+.cal-close:hover { color: #333; }
+.cal-weekdays {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+  margin-bottom: 6px;
+}
+.cal-weekday { text-align: center; font-size: 11px; font-weight: 700; color: #aaa; padding: 4px 0; }
+.cal-weekday:first-child, .cal-weekday:last-child { color: #e57373; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-cell {
+  border-radius: 10px; padding: 6px 3px; min-height: 54px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s; border: 2px solid transparent; position: relative;
+}
+.cal-cell:hover:not(.cal-empty):not(.cal-no-config) { transform: scale(1.06); z-index: 1; }
+.cal-cell.cal-empty { background: none; cursor: default; pointer-events: none; }
+.cal-cell.cal-no-config { background: #fafafa; cursor: default; opacity: 0.5; }
+.cal-cell.cal-closed { background: #f5f5f5; cursor: not-allowed; }
+.cal-cell.cal-open { background: #e8f5e9; border-color: #a5d6a7; cursor: pointer; }
+.cal-cell.cal-today { border-color: #0f3460 !important; }
+.cal-cell.cal-selected { border-color: #0f3460 !important; box-shadow: 0 0 0 2px #0f346040; }
+.cal-cell-day { font-size: 14px; font-weight: 700; line-height: 1; }
+.cal-cell-slot { font-size: 10px; font-weight: 700; margin-top: 3px; }
+.cal-cell.cal-open .cal-cell-day { color: #2e7d32; }
+.cal-cell.cal-open .cal-cell-slot { color: #2e7d32; }
+.cal-cell.cal-closed .cal-cell-day { color: #bbb; }
+.cal-cell.cal-closed .cal-cell-slot { color: #bbb; }
+.cal-cell.cal-no-config .cal-cell-day { color: #ccc; }
+.cal-legend {
+  display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap;
+  padding-top: 12px; border-top: 1px solid #f0f2f5;
+}
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #666; }
+.legend-dot {
+  width: 12px; height: 12px; border-radius: 4px; flex-shrink: 0;
+}
+.cal-loading { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
+.btn-slot-cal {
+  padding: 8px 14px; background: #e8eaf6; color: #3949ab;
+  border: 1px solid #9fa8da; border-radius: 8px; font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; gap: 5px;
+}
+.btn-slot-cal:hover { background: #c5cae9; }
 </style>
 </head>
 <body>
@@ -520,15 +594,18 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
     <div class="control-bar">
       <div class="date-picker-group">
         <label>📋 วันดูคิว</label>
-        <input type="date" id="date-picker" onchange="loadBookings()">
+        <input type="date" id="date-picker" onchange="loadQueueDateBookings()">
       </div>
       <div class="date-picker-group" style="border-left:2px solid #e0e0e0; padding-left:16px;">
         <label style="color:#e65100; font-weight:700;">📅 วันให้บริการ</label>
         <input type="date" id="service-date-picker"
           style="border-color:#e65100; background:#fff8f4;"
-          onchange="loadBookings()">
+          onchange="loadServiceDateBookings()">
       </div>
       <span class="slot-chip" id="slot-info-chip" style="display:none;">📊 Slot: —</span>
+      <button class="btn-slot-cal" onclick="openSlotCalendar()" title="ดู Slot ว่างทุกวันในปฏิทิน">
+        📅 ปฏิทิน Slot
+      </button>
       <button class="btn-refresh" onclick="loadBookings()">
         🔄 รีเฟรช
       </button>
@@ -586,6 +663,30 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
   </div>
 </div>
 
+<!-- ─── SLOT CALENDAR MODAL ─── -->
+<div class="cal-overlay" id="cal-overlay" onclick="closeSlotCalendar(event)">
+  <div class="cal-modal" onclick="event.stopPropagation()">
+    <div class="cal-header">
+      <div class="cal-title">📅 ปฏิทิน Slot ว่าง</div>
+      <div class="cal-nav">
+        <button onclick="calNavigate(-1)" title="เดือนก่อนหน้า">‹</button>
+        <div class="cal-month-label" id="cal-month-label">—</div>
+        <button onclick="calNavigate(1)" title="เดือนถัดไป">›</button>
+      </div>
+      <button class="cal-close" onclick="closeSlotCalendar()">✕</button>
+    </div>
+    <div id="cal-body">
+      <div class="cal-loading">กำลังโหลดข้อมูล Slot...</div>
+    </div>
+    <div class="cal-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#e8f5e9;border:1px solid #a5d6a7;"></div>มี Slot ว่าง</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f5f5f5;border:1px solid #e0e0e0;"></div>ปิด / เต็ม</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fafafa;border:1px solid #e8e8e8;"></div>ไม่มีข้อมูล</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fff;border:2px solid #0f3460;"></div>วันที่เลือก</div>
+    </div>
+  </div>
+</div>
+
 <!-- ─── PRINT AREA ─── -->
 <div id="print-area">
   <div id="print-slip-content"></div>
@@ -615,8 +716,9 @@ const TH_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.',
 // ─── State ───
 let currentBranch = null;
 let currentPassword = null;
-let allBookings = [];            // bookings ที่ match service date ที่เลือก (column J)
-let allUnassignedBookings = [];  // bookings ที่ column J ว่าง (ยังไม่กำหนดวัน)
+let allBookings = [];             // bookings ที่ match service date ที่เลือก (column J)
+let allUnassignedBookings = [];   // bookings ที่ column J ว่าง (ยังไม่กำหนดวัน)
+let allQueueDateBookings = [];    // bookings ที่ register วัน "วันดูคิว" (by Timestamp) → Tab ทั้งหมด
 let currentFilter = 'all';
 let pollInterval = null;
 let lastTimestamp = null;
@@ -625,6 +727,8 @@ const newCardRefs = new Set();
 let settingsVisible = false;
 let branchFullConfig = null;
 let currentSessionQuotas = {};
+let calCurrentYear = null;
+let calCurrentMonth = null;
 
 // ─── API ───
 async function apiCall(action, params = {}) {
@@ -685,6 +789,8 @@ function doLogout() {
   currentPassword = null;
   allBookings = [];
   allUnassignedBookings = [];
+  allQueueDateBookings = [];
+  branchFullConfig = null;
   if (pollInterval) clearInterval(pollInterval);
   document.getElementById('main-app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
@@ -704,41 +810,74 @@ function showMainApp() {
   document.getElementById('service-date-picker').value = dateStr;
 
   lastTimestamp = new Date().toISOString();
-  loadBookings();
+  loadBookings();           // โหลด bookings ทั้ง 2 mode พร้อมกัน
+  prefetchBranchConfig();   // โหลด config สาขา (ราคา, slot) background — ไม่รอ
   startPolling();
 }
 
-// ─── LOAD BOOKINGS ───
-// Single API call: getBookings(filterBy:'serviceDate') คืน bookings + unassigned + slotSummary
-// ลดจาก 2 calls เหลือ 1 call → รองรับ 40+ สาขาพร้อมกัน
-async function loadBookings() {
-  const serviceDate = document.getElementById('service-date-picker').value;
-  if (!serviceDate) return;
+// ─── PREFETCH BRANCH CONFIG (ราคา + slot config — silent background load) ───
+// เรียกตอน login เพื่อให้ราคาพร้อมสำหรับ print + ปฏิทิน Slot
+// ไม่แสดง loading UI — ไม่กระทบ Settings panel
+async function prefetchBranchConfig() {
+  try {
+    const result = await apiCall('getBranchFullConfig');
+    if (result.success) {
+      branchFullConfig = result;
+      // ถ้า calendar เปิดอยู่แล้ว refresh ด้วย
+      if (document.getElementById('cal-overlay').classList.contains('open')) renderCalendar();
+    }
+  } catch (e) { /* silent — ราคาจะแสดง '—' แต่ระบบยังทำงานได้ */ }
+}
 
+// ─── LOAD BOOKINGS (Combined — Refresh + Initial) ───
+// เรียก loadServiceDateBookings + loadQueueDateBookings พร้อมกัน
+async function loadBookings() {
   showLoading(true);
   try {
+    await Promise.all([loadServiceDateBookings(), loadQueueDateBookings()]);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ─── LOAD SERVICE DATE BOOKINGS ───
+// filterBy:'serviceDate' → bookings ตาม column J (วันให้บริการ) + unassigned + slotSummary
+// ใช้กับ tab: เช้า / บ่าย / เย็น / เสร็จ / ยังไม่กำหนดวัน
+async function loadServiceDateBookings() {
+  const serviceDate = document.getElementById('service-date-picker').value;
+  if (!serviceDate) return;
+  try {
     const result = await apiCall('getBookings', { date: serviceDate, filterBy: 'serviceDate' });
-
     if (result.success) {
-      allBookings          = result.bookings   || [];
+      allBookings           = result.bookings   || [];
       allUnassignedBookings = result.unassigned || [];
-
       if (result.slotSummary) {
         currentSessionQuotas = result.slotSummary.sessionQuotas || {};
-        // ใช้ unassigned count จริงๆ แทน counts.ยังไม่กำหนด (ที่นับเฉพาะ service date)
         const counts = Object.assign({}, result.slotSummary.counts,
           { ยังไม่กำหนด: allUnassignedBookings.length });
         updateStats(counts, result.slotSummary.totalSlots);
       }
-
-      renderQueue();
+      if (currentFilter !== 'all') renderQueue();
       updateUnassignedBadge();
     }
   } catch (e) {
     showToast('⚠️', 'ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้');
-  } finally {
-    showLoading(false);
   }
+}
+
+// ─── LOAD QUEUE DATE BOOKINGS ───
+// Legacy mode (no filterBy) → bookings ตาม Timestamp (วันดูคิว/วันลงทะเบียน)
+// ใช้กับ tab: ทั้งหมด — แสดงลูกค้าที่ลงทะเบียนวันนั้น ทั้ง assigned + unassigned
+async function loadQueueDateBookings() {
+  const queueDate = document.getElementById('date-picker').value;
+  if (!queueDate) return;
+  try {
+    const result = await apiCall('getBookings', { date: queueDate }); // no filterBy = Timestamp mode
+    if (result.success) {
+      allQueueDateBookings = result.bookings || [];
+      if (currentFilter === 'all') renderQueue();
+    }
+  } catch (e) { /* silent fail สำหรับ tab ทั้งหมด */ }
 }
 
 function updateStats(counts, totalSlots) {
@@ -768,9 +907,11 @@ function renderQueue() {
   if (currentFilter === 'unassigned') {
     // ⏳ ยังไม่กำหนดวัน → ใช้ allUnassignedBookings (column J ว่าง)
     filtered = allUnassignedBookings;
+  } else if (currentFilter === 'all') {
+    // ทั้งหมด → ลูกค้าที่ลงทะเบียน "วันดูคิว" ทั้ง assigned + unassigned (ยกเว้นยกเลิก)
+    filtered = allQueueDateBookings.filter(b => b.status !== 'ยกเลิก');
   } else {
     filtered = allBookings.filter(b => {
-      if (currentFilter === 'all')    return b.status !== 'ยกเลิก';
       if (currentFilter === 'เสร็จ') return b.status === 'เสร็จ';
       return b.session === currentFilter && b.status !== 'ยกเลิก';
     });
@@ -779,7 +920,9 @@ function renderQueue() {
   if (filtered.length === 0) {
     const emptyMsg = currentFilter === 'unassigned'
       ? 'ลูกค้าทุกคนได้รับวันนัดแล้ว ✅'
-      : 'ไม่มีรายการในหมวดนี้';
+      : currentFilter === 'all'
+        ? `ยังไม่มีลูกค้าลงทะเบียนวันนี้ (${document.getElementById('date-picker').value || '—'})`
+        : 'ไม่มีรายการในหมวดนี้';
     container.innerHTML = `<div class="queue-empty"><div class="empty-icon">📋</div>${emptyMsg}</div>`;
     return;
   }
@@ -972,6 +1115,133 @@ function setFilter(filter, btn) {
   renderQueue();
 }
 
+// ─── SLOT CALENDAR ───────────────────────────────────────────────────────────
+// ปฏิทินแสดง Slot ว่างรายวัน — ใช้ข้อมูลจาก branchFullConfig.slotConfig
+// ที่ load ตอน login → ไม่ต้อง API call เพิ่ม
+// คลิกวัน → set service-date-picker → load booking วันนั้นทันที
+// ─────────────────────────────────────────────────────────────────────────────
+function openSlotCalendar() {
+  const overlay = document.getElementById('cal-overlay');
+  overlay.classList.add('open');
+
+  // กำหนด month เริ่มต้นจาก service-date-picker ที่เลือกอยู่
+  const sdVal = document.getElementById('service-date-picker').value;
+  const ref = sdVal ? new Date(sdVal + 'T12:00:00') : new Date();
+  calCurrentYear  = ref.getFullYear();
+  calCurrentMonth = ref.getMonth(); // 0-based
+
+  if (!branchFullConfig) {
+    document.getElementById('cal-body').innerHTML =
+      '<div class="cal-loading">กำลังโหลด... กรุณาลองอีกครั้งในอีกสักครู่</div>';
+    // ลองโหลด config แล้ว re-render
+    prefetchBranchConfig().then(() => {
+      if (document.getElementById('cal-overlay').classList.contains('open')) renderCalendar();
+    });
+    return;
+  }
+  renderCalendar();
+}
+
+function closeSlotCalendar(e) {
+  if (e && e.target !== document.getElementById('cal-overlay')) return;
+  document.getElementById('cal-overlay').classList.remove('open');
+}
+
+function calNavigate(dir) {
+  calCurrentMonth += dir;
+  if (calCurrentMonth > 11) { calCurrentMonth = 0; calCurrentYear++; }
+  if (calCurrentMonth < 0)  { calCurrentMonth = 11; calCurrentYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const TH_MONTHS_LONG = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                          'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+  // สร้าง map: dateStr → slotInfo จาก branchFullConfig.slotConfig
+  const slotMap = {};
+  if (branchFullConfig && branchFullConfig.slotConfig) {
+    branchFullConfig.slotConfig.forEach(s => {
+      slotMap[s.date] = s; // { date, dayName, isHoliday, slots }
+    });
+  }
+
+  const year  = calCurrentYear;
+  const month = calCurrentMonth;
+  const today = new Date().toISOString().split('T')[0];
+  const selectedDate = document.getElementById('service-date-picker').value;
+
+  // หัว: เดือน ปี (พ.ศ.)
+  document.getElementById('cal-month-label').textContent =
+    `${TH_MONTHS_LONG[month]} ${year + 543}`;
+
+  // หาวันแรกของเดือน + จำนวนวัน
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const weekdays = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+  let html = `
+    <div class="cal-weekdays">
+      ${weekdays.map((d,i) => `<div class="cal-weekday" style="${i===0||i===6?'color:#e57373;':''}">${d}</div>`).join('')}
+    </div>
+    <div class="cal-grid">
+  `;
+
+  // เติม empty cells ก่อนวันที่ 1
+  for (let e = 0; e < firstDay; e++) {
+    html += `<div class="cal-cell cal-empty"></div>`;
+  }
+
+  // render วันต่างๆ
+  for (let day = 1; day <= daysInMonth; day++) {
+    const mm   = String(month + 1).padStart(2, '0');
+    const dd   = String(day).padStart(2, '0');
+    const dStr = `${year}-${mm}-${dd}`;
+    const info = slotMap[dStr];
+
+    let cls = 'cal-no-config';
+    let slotLabel = '';
+    let slotColor = '';
+
+    if (info) {
+      if (info.isHoliday || info.slots === 0) {
+        cls = 'cal-closed';
+        slotLabel = info.isHoliday ? '🚫' : 'ปิด';
+      } else {
+        cls = 'cal-open';
+        slotLabel = `${info.slots} slot`;
+      }
+    }
+
+    if (dStr === today)        cls += ' cal-today';
+    if (dStr === selectedDate) cls += ' cal-selected';
+
+    const isWeekend = (new Date(dStr).getDay() === 0 || new Date(dStr).getDay() === 6);
+    const dayColor = isWeekend ? 'style="color:#e57373;"' : '';
+
+    const clickable = info && !info.isHoliday && info.slots > 0;
+    const clickAttr = clickable ? `onclick="calSelectDate('${dStr}')"` : '';
+
+    html += `
+      <div class="cal-cell ${cls}" ${clickAttr} title="${dStr}">
+        <span class="cal-cell-day" ${dayColor}>${day}</span>
+        ${slotLabel ? `<span class="cal-cell-slot">${slotLabel}</span>` : ''}
+      </div>
+    `;
+  }
+
+  html += '</div>';
+  document.getElementById('cal-body').innerHTML = html;
+}
+
+function calSelectDate(dateStr) {
+  document.getElementById('service-date-picker').value = dateStr;
+  document.getElementById('cal-overlay').classList.remove('open');
+  loadServiceDateBookings();
+  // highlight tab ให้กลับไปที่ tab เช้า/บ่าย/เย็น ถ้าอยู่ใน 'all'
+  // ไม่เปลี่ยน filter เพื่อไม่ disrupt UX
+}
+
 // ─── POLLING / NOTIFICATION ───
 function startPolling() {
   if (pollInterval) clearInterval(pollInterval);
@@ -993,12 +1263,20 @@ async function pollNewBookings() {
         // booking ใหม่มี column J ว่าง → ไปที่ unassigned
         // (ถ้ามี bookingDate แล้วและตรงกับ service date → allBookings)
         const currentServiceDate = document.getElementById('service-date-picker').value;
+        const currentQueueDate   = document.getElementById('date-picker').value;
         if (b.bookingDate && b.bookingDate === currentServiceDate) {
           allBookings.push(b);
           allBookings.sort((a, x) => a.queueNo - x.queueNo);
         } else {
           allUnassignedBookings.push(b);
           allUnassignedBookings.sort((a, x) => a.queueNo - x.queueNo);
+        }
+        // เพิ่มใน allQueueDateBookings ถ้า timestamp ตรงกับ date-picker
+        if (b.timestamp && b.timestamp.startsWith(currentQueueDate)) {
+          if (!allQueueDateBookings.find(x => x.bookingRef === b.bookingRef)) {
+            allQueueDateBookings.push(b);
+            allQueueDateBookings.sort((a, x) => a.queueNo - x.queueNo);
+          }
         }
 
         newCardRefs.add(b.bookingRef);
@@ -1267,8 +1545,19 @@ async function toggleSettings() {
   document.getElementById('queue-panel').style.display = settingsVisible ? 'none' : 'block';
   document.getElementById('btn-settings-toggle').textContent = settingsVisible ? '← คิว' : '⚙️ ตั้งค่า';
 
-  if (settingsVisible && !branchFullConfig) {
-    await loadBranchConfig();
+  if (settingsVisible) {
+    if (branchFullConfig) {
+      // config ถูก prefetch มาแล้ว → render settings UI ทันทีโดยไม่ต้อง API call ซ้ำ
+      renderSlotConfig(branchFullConfig.slotConfig);
+      renderQuotaConfig(branchFullConfig.quotaConfig);
+      renderSessionConfig(branchFullConfig.sessionConfig);
+      ['slot','quota','session'].forEach(k => {
+        document.getElementById(k + '-config-loading').style.display = 'none';
+        document.getElementById(k + '-config-container').style.display = 'block';
+      });
+    } else {
+      await loadBranchConfig();
+    }
   }
 }
 
