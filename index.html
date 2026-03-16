@@ -470,12 +470,15 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 .cal-cell.cal-no-config { background: #fafafa; cursor: default; opacity: 0.5; }
 .cal-cell.cal-closed { background: #f5f5f5; cursor: not-allowed; }
 .cal-cell.cal-open { background: #e8f5e9; border-color: #a5d6a7; cursor: pointer; }
+.cal-cell.cal-holiday { background: #fff3e0; border-color: #ffcc80; cursor: pointer; }
 .cal-cell.cal-today { border-color: #0f3460 !important; }
 .cal-cell.cal-selected { border-color: #0f3460 !important; box-shadow: 0 0 0 2px #0f346040; }
 .cal-cell-day { font-size: 14px; font-weight: 700; line-height: 1; }
 .cal-cell-slot { font-size: 10px; font-weight: 700; margin-top: 3px; }
 .cal-cell.cal-open .cal-cell-day { color: #2e7d32; }
 .cal-cell.cal-open .cal-cell-slot { color: #2e7d32; }
+.cal-cell.cal-holiday .cal-cell-day { color: #e65100; }
+.cal-cell.cal-holiday .cal-cell-slot { color: #e65100; }
 .cal-cell.cal-closed .cal-cell-day { color: #bbb; }
 .cal-cell.cal-closed .cal-cell-slot { color: #bbb; }
 .cal-cell.cal-no-config .cal-cell-day { color: #ccc; }
@@ -713,7 +716,8 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
     </div>
     <div class="cal-legend">
       <div class="legend-item"><div class="legend-dot" style="background:#e8f5e9;border:1px solid #a5d6a7;"></div>มี Slot ว่าง</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#f5f5f5;border:1px solid #e0e0e0;"></div>ปิด / เต็ม</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fff3e0;border:1px solid #ffcc80;"></div>วันหยุด (มี Slot)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f5f5f5;border:1px solid #e0e0e0;"></div>ปิด (Slot = 0)</div>
       <div class="legend-item"><div class="legend-dot" style="background:#fafafa;border:1px solid #e8e8e8;"></div>ไม่มีข้อมูล</div>
       <div class="legend-item"><div class="legend-dot" style="background:#fff;border:2px solid #0f3460;"></div>วันที่เลือก</div>
     </div>
@@ -760,6 +764,8 @@ const newCardRefs = new Set();
 let settingsVisible = false;
 let branchFullConfig = null;
 let currentSessionQuotas = {};
+let currentTotalSlots = 0;    // slot รวมต่อวันจาก CONFIG_Slot
+let currentTotalUsed  = 0;    // booking ที่ใช้ slot ไปแล้ว (ยกเว้นยกเลิก)
 let calCurrentYear = null;
 let calCurrentMonth = null;
 
@@ -886,6 +892,8 @@ async function loadServiceDateBookings() {
       allUnassignedBookings = result.unassigned || [];
       if (result.slotSummary) {
         currentSessionQuotas = result.slotSummary.sessionQuotas || {};
+        currentTotalSlots = result.slotSummary.totalSlots || 0;
+        currentTotalUsed  = result.slotSummary.counts.total || 0;
         const counts = Object.assign({}, result.slotSummary.counts,
           { ยังไม่กำหนด: allUnassignedBookings.length });
         updateStats(counts, result.slotSummary.totalSlots);
@@ -987,11 +995,15 @@ function renderRow(b) {
   const srcLabel = b.source === 'online' ? '🌐 Online' : '🏪 Walk-in';
 
   // ── Session buttons (compact) ──
+  // isDayFull: วัน slot เต็มแล้ว → disable ทุก session ยกเว้น booking ที่ assign วันนี้แล้ว (reassign ได้)
+  const isDayFull = currentTotalSlots > 0 && currentTotalUsed >= currentTotalSlots && !b.bookingDate;
   const sessionBtns = Object.entries(SESSIONS).map(([key, val]) => {
     const assignedCount = allBookings.filter(x => x.session === key && x.status !== 'ยกเลิก').length;
     const quota = currentSessionQuotas[key];
     let hint = '';
-    if (quota === 0) {
+    if (isDayFull && !b.session) {
+      hint = `<span class="sess-hint" style="color:#ef9a9a;">เต็ม</span>`;
+    } else if (quota === 0) {
       hint = `<span class="sess-hint" style="color:#ef9a9a;">ปิด</span>`;
     } else if (quota > 0) {
       const full = assignedCount >= quota;
@@ -1006,7 +1018,7 @@ function renderRow(b) {
     const selCls     = isSelected ? `sel-${key}` : '';
     return `<button class="sess-sm ${selCls}"
       onclick="doAssignSession('${b.bookingRef}','${key}',this)"
-      ${isDone || (isClosed && !isSelected) || (isFull && !isSelected) ? 'disabled' : ''}>
+      ${isDone || isDayFull || (isClosed && !isSelected) || (isFull && !isSelected) ? 'disabled' : ''}>
       ${val.icon}${key}${hint}
     </button>`;
   }).join('');
@@ -1304,11 +1316,13 @@ function renderCalendar() {
     let slotColor = '';
 
     if (info) {
-      if (info.isHoliday || info.slots === 0) {
+      if (info.slots === 0) {
+        // ปิด (slot = 0) → cal-closed
         cls = 'cal-closed';
-        slotLabel = info.isHoliday ? '🚫' : 'ปิด';
+        slotLabel = 'ปิด';
       } else {
-        cls = 'cal-open';
+        // มี slot ไม่ว่าจะวันหยุดหรือไม่ → cal-open (วันหยุดจะ highlight สีส้มแยก)
+        cls = info.isHoliday ? 'cal-holiday' : 'cal-open';
         slotLabel = `${info.slots} slot`;
       }
     }
@@ -1319,7 +1333,7 @@ function renderCalendar() {
     const isWeekend = (new Date(dStr).getDay() === 0 || new Date(dStr).getDay() === 6);
     const dayColor = isWeekend ? 'style="color:#e57373;"' : '';
 
-    const clickable = info && !info.isHoliday && info.slots > 0;
+    const clickable = info && info.slots > 0; // วันหยุดที่มี slot ก็คลิกได้
     const clickAttr = clickable ? `onclick="calSelectDate('${dStr}')"` : '';
 
     html += `
@@ -1459,7 +1473,12 @@ function showToast(icon, title, sub) {
 }
 
 // ─── PRINT ───
-function doPrint(booking) {
+async function doPrint(booking) {
+  // ถ้า config ยังไม่โหลด → โหลดก่อน (เพื่อให้ราคาแสดง)
+  if (!branchFullConfig) {
+    showToast('⏳', 'กำลังโหลดข้อมูลราคา...', 'รอสักครู่');
+    await prefetchBranchConfig();
+  }
   const session = booking.session;
   const sessionInfo = session ? SESSIONS[session] : null;
 
@@ -1577,6 +1596,17 @@ function doPrint(booking) {
         <div class="print-cond-item"><span class="print-cond-num">7.</span><span>ไม่สามารถดำเนินการคืนเงินที่ได้ชำระไว้ ในกรณีที่ลูกค้าต้องการยกเลิกการจอง</span></div>
         <div class="print-cond-item"><span class="print-cond-num">8.</span><span>แบตเตอรี่ที่ได้รับการเปลี่ยนไป จะมีการรับประกันเฉพาะตัวแบตเตอรี่ 90 วัน</span></div>
         <div class="print-cond-item"><span class="print-cond-num">9.</span><span>ลูกค้าสามารถทำการรับบริการ ได้ที่สาขาที่ได้ทำเรื่องจองไว้เท่านั้น</span></div>
+
+        <div class="print-cond-title" style="margin-top:8px;">English Version</div>
+        <div class="print-cond-item"><span class="print-cond-num">1.</span><span>This document serves as a battery replacement booking confirmation only.</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">2.</span><span>The screen protector must be removed during the battery replacement process and will not be returned.</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">3.</span><span>Find My iPhone (FMiP) must be disabled before the service appointment. A full data backup prior to the visit is strongly recommended.</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">4.</span><span>Service is available only for the selected iPhone model and on the confirmed booking date.</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">5.</span><span>If a customer arrives after the booking date, service may be delayed and a follow-up arrangement will be required.</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">6.</span><span>A device inspection will be conducted on the service date. If the device condition prevents battery replacement, a full refund of the booking fee will be processed within approximately 45 days of receiving complete documentation from the customer.</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">7.</span><span>No refunds will be issued for voluntary booking cancellations.</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">8.</span><span>The replaced battery carries a 90-day warranty covering the battery component only.</span></div>
+        <div class="print-cond-item"><span class="print-cond-num">9.</span><span>Service is available only at the branch where the booking was originally made.</span></div>
       </div>
 
       <!-- Signatures -->
@@ -1707,19 +1737,17 @@ function renderSlotConfig(slotConfig) {
     const dt = new Date(s.date + 'T12:00:00');
     const dayNum = dt.getDay();
     const isWeekend = dayNum === 0 || dayNum === 6;
+    // วันหยุด = highlight สีส้ม แต่ยังแก้ไขได้ (สาขาเปิดทุกวัน)
     const dayClass = s.isHoliday ? 'day-holiday' : (isWeekend ? 'day-weekend' : '');
-    const dayLabel = s.isHoliday ? '🚫 หยุด' : TH_DAYS[dayNum];
+    const dayLabel = s.isHoliday ? '📅 วันหยุด' : TH_DAYS[dayNum];
     const dateDisplay = `${dt.getDate()} ${TH_MONTHS[dt.getMonth()]} ${dt.getFullYear() + 543}`;
 
-    return `<tr>
+    return `<tr${s.isHoliday ? ' style="background:#fff8e1;"' : ''}>
       <td>${dateDisplay}</td>
       <td><span class="day-label ${dayClass}">${dayLabel}</span></td>
       <td style="text-align:center;">
-        ${s.isHoliday
-          ? '<input class="config-input holiday" value="🚫" disabled>'
-          : `<input class="config-input" type="number" min="0" max="999"
-               data-date="${s.date}" value="${s.slots}" placeholder="0">`
-        }
+        <input class="config-input" type="number" min="0" max="999"
+          data-date="${s.date}" value="${s.slots}" placeholder="0">
       </td>
     </tr>`;
   }).join('');
@@ -1767,15 +1795,13 @@ function renderSessionConfig(sessionConfig) {
     const dt = new Date(s.date + 'T12:00:00');
     const dayNum = dt.getDay();
     const isWeekend = dayNum === 0 || dayNum === 6;
+    // วันหยุด = highlight สีส้ม แต่ยังแก้ไขได้ (สาขาเปิดทุกวัน)
     const dayClass = s.isHoliday ? 'day-holiday' : (isWeekend ? 'day-weekend' : '');
-    const dayLabel = s.isHoliday ? '🚫 หยุด' : TH_DAYS[dayNum];
+    const dayLabel = s.isHoliday ? '📅 วันหยุด' : TH_DAYS[dayNum];
     const dateDisplay = `${dt.getDate()} ${TH_MONTHS[dt.getMonth()]} ${dt.getFullYear() + 543}`;
 
     const sessionCells = sessions.map(ses => {
       const val = (s[ses] !== undefined && s[ses] !== null) ? s[ses] : -1;
-      if (s.isHoliday) {
-        return `<td style="text-align:center;"><input class="config-input holiday" value="🚫" disabled></td>`;
-      }
       return `<td style="text-align:center;">
         <input class="config-input" type="number" min="-1" max="999"
           data-date="${s.date}" data-session="${ses}"
@@ -1784,7 +1810,7 @@ function renderSessionConfig(sessionConfig) {
       </td>`;
     }).join('');
 
-    return `<tr>
+    return `<tr${s.isHoliday ? ' style="background:#fff8e1;"' : ''}>
       <td>${dateDisplay}</td>
       <td><span class="day-label ${dayClass}">${dayLabel}</span></td>
       ${sessionCells}
