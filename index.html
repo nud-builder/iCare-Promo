@@ -499,6 +499,9 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 }
 .btn-slot-cal:hover { background: #c5cae9; }
 </style>
+<!-- ─── Firebase SDK (compat v9) ─── -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -741,6 +744,84 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 // ─── CONFIG ───
 const API_URL = 'https://script.google.com/macros/s/AKfycbw3aBuQdj84npSjZl1Dqm16W94wPiiWOz39ZFHkUIxeFiyTy_i9S8bevy0YcXg-5uBa/exec';
 
+// ─── FIREBASE CONFIG ─────────────────────────────────────────────────────────
+// แก้ databaseURL หลัง setup Firebase project (ดู FIREBASE_SETUP.md)
+// ถ้ายังไม่ได้ตั้งค่า ระบบจะ fallback เป็น polling ปกติ (ไม่ error)
+// ─────────────────────────────────────────────────────────────────────────────
+const FIREBASE_CONFIG = {
+  databaseURL: 'https://searchpart-12c7d-default-rtdb.asia-southeast1.firebasedatabase.app',  // ← แก้ไข
+};
+
+let _firebaseApp  = null;
+let _firebaseDb   = null;
+let _slotRef      = null;  // Firebase DatabaseReference ที่กำลัง subscribe อยู่
+let _slotCb       = null;  // callback ที่ส่งให้ .on() เพื่อ .off() ได้ตรงตัว
+
+function initFirebase() {
+  if (_firebaseApp) return;
+  if (!FIREBASE_CONFIG.databaseURL || FIREBASE_CONFIG.databaseURL.includes('YOUR_')) return;
+  try {
+    _firebaseApp = firebase.initializeApp(FIREBASE_CONFIG, 'battery-booking');
+    _firebaseDb  = firebase.database(_firebaseApp);
+    console.log('[Firebase] initialized');
+  } catch(e) {
+    console.warn('[Firebase] init failed:', e.message);
+  }
+}
+
+// ─── subscribeSlotRealtime ────────────────────────────────────────────────────
+// subscribe WebSocket ไปยัง /slots/{branchId}/{dateKey}
+// เมื่อ GAS push ข้อมูลใหม่ → updateSlotChipOnly() ทันที ไม่ต้อง refresh
+// ─────────────────────────────────────────────────────────────────────────────
+function subscribeSlotRealtime(branchId, date) {
+  if (!_firebaseDb) return;  // Firebase ยังไม่ได้ตั้งค่า → ข้าม
+  unsubscribeSlotRealtime();  // ปิด listener เก่าก่อนเสมอ
+  const dateKey = date.replace(/-/g, '');
+  _slotRef = _firebaseDb.ref(`/slots/${branchId}/${dateKey}`);
+  _slotCb  = _slotRef.on('value', snap => {
+    const d = snap.val();
+    if (!d) return;
+    // sync state
+    currentTotalSlots = d.total || 0;
+    currentTotalUsed  = d.used  || 0;
+    if (d.sessions) {
+      currentSessionQuotas = {
+        เช้า: d.sessions['เช้า'] ? d.sessions['เช้า'].quota : -1,
+        บ่าย: d.sessions['บ่าย'] ? d.sessions['บ่าย'].quota : -1,
+        เย็น: d.sessions['เย็น'] ? d.sessions['เย็น'].quota : -1,
+      };
+    }
+    updateSlotChipOnly(d.used || 0, d.total || 0);
+    console.log(`[Firebase] slot update ${date}: ${d.used}/${d.total}`);
+  });
+}
+
+function unsubscribeSlotRealtime() {
+  if (_slotRef && _slotCb) {
+    _slotRef.off('value', _slotCb);  // ปิด listener ตรงตัว
+    _slotRef = null;
+    _slotCb  = null;
+  }
+}
+
+// ─── updateSlotChipOnly ───────────────────────────────────────────────────────
+// อัพเดทเฉพาะ slot-info-chip (ไม่แตะ queue) — เรียกจาก Firebase listener
+// ─────────────────────────────────────────────────────────────────────────────
+function updateSlotChipOnly(used, total) {
+  const chip = document.getElementById('slot-info-chip');
+  if (!chip) return;
+  if (total > 0) {
+    const remaining = total - used;
+    const pct = Math.round((used / total) * 100);
+    chip.style.display = 'inline-flex';
+    chip.style.background = remaining === 0 ? '#ffebee' : remaining <= 3 ? '#fff3e0' : '#e8f5e9';
+    chip.style.color = remaining === 0 ? '#c62828' : remaining <= 3 ? '#e65100' : '#2e7d32';
+    chip.textContent = `📊 Slot: ${used}/${total} (ว่าง ${remaining})`;
+  } else {
+    chip.style.display = 'none';
+  }
+}
+
 const SESSIONS = {
   'เช้า':  { time: '11:00 – 13:00 น.', start: '11:00', icon: '🌅' },
   'บ่าย':  { time: '13:00 – 16:00 น.', start: '13:00', icon: '🌞' },
@@ -805,6 +886,7 @@ async function doLogin() {
       currentPassword = password;
       localStorage.setItem('icare_branch', JSON.stringify({ branch: result.branch, password }));
       showLoginError('');
+      initFirebase();  // init Firebase RTDB (one-time, safe to call multiple times)
       showMainApp();
     } else {
       showLoginError(result.error || 'เข้าสู่ระบบไม่สำเร็จ');
@@ -830,6 +912,7 @@ function doLogout() {
   allUnassignedBookings = [];
   allQueueDateBookings = [];
   branchFullConfig = null;
+  unsubscribeSlotRealtime();  // ปิด Firebase WebSocket listener
   if (pollInterval) clearInterval(pollInterval);
   document.getElementById('main-app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
@@ -897,6 +980,8 @@ async function loadServiceDateBookings() {
         const counts = Object.assign({}, result.slotSummary.counts,
           { ยังไม่กำหนด: allUnassignedBookings.length });
         updateStats(counts, result.slotSummary.totalSlots);
+        // Subscribe Firebase realtime slot update สำหรับวันที่เลือก
+        if (currentBranch) subscribeSlotRealtime(currentBranch.id, serviceDate);
       }
       if (currentFilter !== 'all') renderQueue();
       updateUnassignedBadge();
