@@ -471,6 +471,9 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 .cal-cell.cal-closed { background: #f5f5f5; cursor: not-allowed; }
 .cal-cell.cal-open { background: #e8f5e9; border-color: #a5d6a7; cursor: pointer; }
 .cal-cell.cal-holiday { background: #fff3e0; border-color: #ffcc80; cursor: pointer; }
+.cal-cell.cal-full { background: #fce4ec; border-color: #ef9a9a; cursor: not-allowed; }
+.cal-cell.cal-full .cal-cell-day { color: #c62828; }
+.cal-cell.cal-full .cal-cell-slot { color: #c62828; font-weight: 800; }
 .cal-cell.cal-today { border-color: #0f3460 !important; }
 .cal-cell.cal-selected { border-color: #0f3460 !important; box-shadow: 0 0 0 2px #0f346040; }
 .cal-cell-day { font-size: 14px; font-weight: 700; line-height: 1; }
@@ -720,6 +723,7 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
     <div class="cal-legend">
       <div class="legend-item"><div class="legend-dot" style="background:#e8f5e9;border:1px solid #a5d6a7;"></div>มี Slot ว่าง</div>
       <div class="legend-item"><div class="legend-dot" style="background:#fff3e0;border:1px solid #ffcc80;"></div>วันหยุด (มี Slot)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fce4ec;border:1px solid #ef9a9a;"></div>เต็มแล้ว</div>
       <div class="legend-item"><div class="legend-dot" style="background:#f5f5f5;border:1px solid #e0e0e0;"></div>ปิด (Slot = 0)</div>
       <div class="legend-item"><div class="legend-dot" style="background:#fafafa;border:1px solid #e8e8e8;"></div>ไม่มีข้อมูล</div>
       <div class="legend-item"><div class="legend-dot" style="background:#fff;border:2px solid #0f3460;"></div>วันที่เลือก</div>
@@ -742,7 +746,7 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 
 <script>
 // ─── CONFIG ───
-const API_URL = 'https://script.google.com/macros/s/AKfycbw3aBuQdj84npSjZl1Dqm16W94wPiiWOz39ZFHkUIxeFiyTy_i9S8bevy0YcXg-5uBa/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxu2bKS48FiLKYQZPxp4rJafJjioOu6vj4u1152tKqL_p680O8ywn45IlO3wrMda9ei/exec';
 
 // ─── FIREBASE CONFIG ─────────────────────────────────────────────────────────
 // แก้ databaseURL หลัง setup Firebase project (ดู FIREBASE_SETUP.md)
@@ -1406,9 +1410,18 @@ function renderCalendar() {
         cls = 'cal-closed';
         slotLabel = 'ปิด';
       } else {
-        // มี slot ไม่ว่าจะวันหยุดหรือไม่ → cal-open (วันหยุดจะ highlight สีส้มแยก)
-        cls = info.isHoliday ? 'cal-holiday' : 'cal-open';
-        slotLabel = `${info.slots} slot`;
+        const used = info.used || 0;
+        const isFull = used >= info.slots;
+        if (isFull) {
+          // เต็มแล้ว → cal-full (แดง, คลิกไม่ได้)
+          cls = 'cal-full';
+          slotLabel = `เต็ม ${used}/${info.slots}`;
+        } else {
+          // ยังมี slot ว่าง → cal-open / cal-holiday
+          cls = info.isHoliday ? 'cal-holiday' : 'cal-open';
+          const remaining = info.slots - used;
+          slotLabel = used > 0 ? `ว่าง ${remaining}/${info.slots}` : `${info.slots} slot`;
+        }
       }
     }
 
@@ -1418,7 +1431,7 @@ function renderCalendar() {
     const isWeekend = (new Date(dStr).getDay() === 0 || new Date(dStr).getDay() === 6);
     const dayColor = isWeekend ? 'style="color:#e57373;"' : '';
 
-    const clickable = info && info.slots > 0; // วันหยุดที่มี slot ก็คลิกได้
+    const clickable = info && info.slots > 0 && (info.used || 0) < info.slots; // เต็มแล้วคลิกไม่ได้
     const clickAttr = clickable ? `onclick="calSelectDate('${dStr}')"` : '';
 
     html += `
