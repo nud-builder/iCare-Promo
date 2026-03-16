@@ -132,83 +132,116 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 .tab-btn:hover { color: #0f3460; }
 .tab-btn.active { color: #0f3460; border-bottom-color: #0f3460; }
 
-/* ─── Queue List ─── */
-.queue-container { padding: 20px 24px; }
+/* ─── Queue Container (Table mode) ─── */
+.queue-container { padding: 16px 24px 24px; }
 .queue-empty {
-  text-align: center; padding: 60px 24px; color: #bbb;
-  font-size: 16px;
+  text-align: center; padding: 60px 24px; color: #bbb; font-size: 15px;
+  background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
-.queue-empty .empty-icon { font-size: 48px; margin-bottom: 12px; }
+.queue-empty .empty-icon { font-size: 40px; margin-bottom: 10px; }
 
-/* ─── Queue Card ─── */
-.queue-card {
-  background: #fff; border-radius: 14px; padding: 16px 20px;
-  margin-bottom: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  border-left: 5px solid #e8e8e8; transition: all 0.3s;
-  animation: slideIn 0.3s ease;
-}
-@keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-.queue-card.new-card { border-left-color: #ff4757; animation: pulse 1s ease 3; }
-@keyframes pulse { 0%,100% { box-shadow: 0 2px 10px rgba(0,0,0,0.06); } 50% { box-shadow: 0 4px 20px rgba(255,71,87,0.4); } }
-.queue-card.status-ยืนยัน { border-left-color: #1565c0; }
-.queue-card.status-เสร็จ { border-left-color: #2e7d32; opacity: 0.75; }
-.queue-card.status-ยกเลิก { border-left-color: #bbb; opacity: 0.5; }
+/* ─── Booking Table (ICS-style) ─── */
+@keyframes rowIn { from { opacity:0; background:#e3f2fd; } to { opacity:1; background:transparent; } }
+@keyframes pulse { 0%,100% { background:#fff; } 50% { background:#ffebee; } }
 
-.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-.queue-number {
-  background: #1a1a2e; color: #fff; border-radius: 10px;
-  width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;
-  font-size: 22px; font-weight: 800; flex-shrink: 0;
+.booking-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  background: #fff; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
 }
-.customer-info { flex: 1; }
-.customer-name { font-size: 17px; font-weight: 700; color: #1a1a2e; }
-.customer-phone { font-size: 13px; color: #888; margin-top: 2px; }
-.customer-source { font-size: 11px; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-top: 4px; }
-.source-walk-in { background: #e3f2fd; color: #1565c0; }
-.source-online { background: #f3e5f5; color: #6a1b9a; }
+.booking-table thead tr { background: #1a1a2e; }
+.booking-table thead th {
+  padding: 10px 12px; font-size: 11px; font-weight: 700; color: #fff;
+  text-transform: uppercase; letter-spacing: 0.5px; text-align: left; white-space: nowrap;
+}
+.booking-row td {
+  padding: 7px 11px; border-bottom: 1px solid #f0f2f5; vertical-align: middle;
+}
+.booking-row:last-child td { border-bottom: none; }
+.booking-row:hover td { background: #f8f9fb !important; }
+.booking-row.row-new { animation: rowIn 0.4s ease; }
+.booking-row.row-new .q-num { background: #e53935; animation: pulse 1s ease 3; }
+.booking-row.status-ยืนยัน .col-indicator { background: #1565c0; }
+.booking-row.status-เสร็จ  .col-indicator { background: #2e7d32; }
+.booking-row.status-ยกเลิก td { opacity: 0.45; }
+.booking-row.status-รอ     .col-indicator { background: #f57f17; }
 
-.card-model { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.model-badge {
-  background: #f0f2f5; color: #333; padding: 5px 12px; border-radius: 20px;
-  font-size: 13px; font-weight: 600;
-}
-.price-badge {
-  background: #e8f5e9; color: #2e7d32; padding: 5px 12px; border-radius: 20px;
-  font-size: 13px; font-weight: 700;
-}
-.booking-date { font-size: 12px; color: #aaa; margin-left: auto; }
+/* Indicator strip (leftmost thin column) */
+.col-indicator { width: 3px; padding: 0 !important; background: #e0e0e0; }
 
-/* ─── Session Buttons ─── */
-.session-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.btn-session {
-  flex: 1; min-width: 90px; padding: 10px 8px; border: 2px solid #e8e8e8;
-  border-radius: 10px; background: #f8f9fb; font-size: 13px; font-weight: 700;
-  cursor: pointer; transition: all 0.2s; text-align: center;
+/* Queue number */
+.q-num {
+  width: 30px; height: 30px; border-radius: 7px;
+  background: #1a1a2e; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800;
 }
-.btn-session:hover { border-color: #0f3460; background: #e8eaf6; }
-.btn-session.selected-เช้า { background: #fff3e0; border-color: #e65100; color: #e65100; }
-.btn-session.selected-บ่าย { background: #e3f2fd; border-color: #1565c0; color: #1565c0; }
-.btn-session.selected-เย็น { background: #f3e5f5; border-color: #6a1b9a; color: #6a1b9a; }
-.session-time-hint { font-size: 11px; color: #aaa; margin-top: 4px; display: block; }
 
-/* ─── Action Buttons ─── */
-.action-group { display: flex; gap: 8px; flex-wrap: wrap; }
-.btn-done {
-  padding: 8px 16px; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7;
-  border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+/* Customer column */
+.cust-name { font-size: 13px; font-weight: 700; color: #1a1a2e; line-height: 1.3; }
+.cust-sub { display: flex; align-items: center; gap: 6px; margin-top: 2px; flex-wrap: wrap; }
+.cust-phone { font-size: 11px; color: #777; }
+.cust-src { font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+.src-walk-in { background: #e3f2fd; color: #1565c0; }
+.src-online  { background: #f3e5f5; color: #6a1b9a; }
+
+/* Model column */
+.model-name { font-size: 12px; font-weight: 700; color: #333; }
+.model-time { font-size: 10px; color: #bbb; margin-top: 1px; }
+
+/* Booking date column */
+.bd-assigned { font-size: 11px; font-weight: 700; color: #1565c0; }
+.bd-none { font-size: 11px; font-weight: 600; color: #ff9800; }
+.bd-sess { font-size: 10px; color: #666; margin-top: 2px; }
+
+/* Session buttons — compact inline */
+.sess-row { display: flex; gap: 3px; flex-wrap: nowrap; }
+.sess-sm {
+  padding: 3px 7px; border-radius: 5px; border: 1.5px solid #e0e0e0;
+  background: #fafafa; font-size: 11px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap; line-height: 1.4;
 }
-.btn-done:hover { background: #c8e6c9; }
-.btn-cancel {
-  padding: 8px 16px; background: #fafafa; color: #888; border: 1px solid #ddd;
-  border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.2s;
+.sess-sm:hover:not(:disabled) { border-color: #0f3460; background: #e8eaf6; }
+.sess-sm.sel-เช้า { background: #fff3e0; border-color: #e65100; color: #e65100; }
+.sess-sm.sel-บ่าย { background: #e3f2fd; border-color: #1565c0; color: #1565c0; }
+.sess-sm.sel-เย็น { background: #f3e5f5; border-color: #6a1b9a; color: #6a1b9a; }
+.sess-sm:disabled { opacity: 0.35; cursor: not-allowed; }
+.sess-hint { font-size: 9px; display: block; opacity: 0.75; font-weight: 400; }
+
+/* Action icon buttons */
+.act-row { display: flex; gap: 3px; align-items: center; }
+.act-ico {
+  width: 27px; height: 27px; border-radius: 6px; border: 1px solid #e0e0e0;
+  background: #fafafa; font-size: 13px; cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; padding: 0;
 }
-.btn-cancel:hover { background: #f5f5f5; color: #d32f2f; border-color: #ef9a9a; }
-.btn-print {
-  padding: 8px 16px; background: #e8eaf6; color: #3949ab; border: 1px solid #9fa8da;
-  border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-  margin-left: auto;
+.act-ico:hover:not(:disabled) { transform: scale(1.1); }
+.act-ico:disabled { opacity: 0.25; cursor: not-allowed; }
+.act-done:hover:not(:disabled)    { background: #e8f5e9; border-color: #a5d6a7; }
+.act-cancel:hover:not(:disabled)  { background: #ffebee; border-color: #ef9a9a; }
+.act-print:hover                  { background: #e8eaf6; border-color: #9fa8da; }
+.act-receipt:hover                { background: #fff3e0; border-color: #ffcc80; }
+.act-receipt.has-data             { background: #fff8e1; border-color: #ffa000; }
+
+/* Receipt expand row */
+.receipt-expand td {
+  background: #f8f9fb; padding: 6px 16px 8px;
+  border-bottom: 2px solid #e8eaf6;
 }
-.btn-print:hover { background: #c5cae9; }
+.receipt-inner { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.receipt-inner label { font-size: 11px; color: #888; font-weight: 600; white-space: nowrap; }
+.ri-input {
+  width: 160px; padding: 5px 10px; border: 1.5px solid #e0e0e0; border-radius: 6px;
+  font-size: 12px; outline: none; transition: border-color 0.2s;
+}
+.ri-input:focus { border-color: #0f3460; }
+.ri-input.filled { border-color: #2e7d32; background: #f1f8f4; }
+.btn-ri-save {
+  padding: 5px 12px; background: #e8eaf6; color: #3949ab;
+  border: 1px solid #9fa8da; border-radius: 6px; font-size: 12px;
+  font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.btn-ri-save:hover { background: #c5cae9; }
 
 /* ─── Status Badge ─── */
 .status-badge {
@@ -899,16 +932,14 @@ function updateStats(counts, totalSlots) {
   }
 }
 
-// ─── RENDER QUEUE ───
+// ─── RENDER QUEUE (ICS-style table) ───
 function renderQueue() {
   const container = document.getElementById('queue-container');
   let filtered;
 
   if (currentFilter === 'unassigned') {
-    // ⏳ ยังไม่กำหนดวัน → ใช้ allUnassignedBookings (column J ว่าง)
     filtered = allUnassignedBookings;
   } else if (currentFilter === 'all') {
-    // ทั้งหมด → ลูกค้าที่ลงทะเบียน "วันดูคิว" ทั้ง assigned + unassigned (ยกเว้นยกเลิก)
     filtered = allQueueDateBookings.filter(b => b.status !== 'ยกเลิก');
   } else {
     filtered = allBookings.filter(b => {
@@ -927,90 +958,153 @@ function renderQueue() {
     return;
   }
 
-  container.innerHTML = filtered.map(b => renderCard(b)).join('');
+  container.innerHTML = `
+    <table class="booking-table">
+      <thead>
+        <tr>
+          <th style="width:3px;padding:0;"></th>
+          <th style="width:46px;text-align:center;">#</th>
+          <th>ลูกค้า</th>
+          <th style="width:160px;">รุ่น / วันนัด</th>
+          <th style="width:190px;">Session</th>
+          <th style="width:88px;">Status</th>
+          <th style="width:114px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filtered.map(b => renderRow(b)).join('')}
+      </tbody>
+    </table>
+  `;
 }
 
-function renderCard(b) {
+// ─── RENDER ROW (ICS-style table row, 2 sub-rows: main + receipt expand) ───
+function renderRow(b) {
   const isNew = newCardRefs.has(b.bookingRef);
-  const sourceBadge = b.source === 'online'
-    ? '<span class="customer-source source-online">🌐 Online</span>'
-    : '<span class="customer-source source-walk-in">🏪 Walk-in</span>';
 
+  // ── Source badge ──
+  const srcClass = b.source === 'online' ? 'src-online' : 'src-walk-in';
+  const srcLabel = b.source === 'online' ? '🌐 Online' : '🏪 Walk-in';
+
+  // ── Session buttons (compact) ──
   const sessionBtns = Object.entries(SESSIONS).map(([key, val]) => {
     const assignedCount = allBookings.filter(x => x.session === key && x.status !== 'ยกเลิก').length;
     const quota = currentSessionQuotas[key];
-    // quota: undefined/-1 = ไม่จำกัด, 0 = ปิด, N>0 = จำกัด
-    let quotaHint = '';
+    let hint = '';
     if (quota === 0) {
-      quotaHint = `<span class="session-time-hint" style="color:#ef9a9a;">ปิด</span>`;
+      hint = `<span class="sess-hint" style="color:#ef9a9a;">ปิด</span>`;
     } else if (quota > 0) {
       const full = assignedCount >= quota;
-      quotaHint = `<span class="session-time-hint" style="${full ? 'color:#ef9a9a;' : ''}">${assignedCount}/${quota}</span>`;
+      hint = `<span class="sess-hint" style="${full ? 'color:#ef9a9a;' : ''}">${assignedCount}/${quota}</span>`;
     } else {
-      quotaHint = `<span class="session-time-hint">${val.start} น.</span>`;
+      hint = `<span class="sess-hint">${val.start}</span>`;
     }
     const isSelected = b.session === key;
-    const isClosed = quota === 0;
-    const isFull = quota > 0 && assignedCount >= quota;
-    const isDone = b.status === 'เสร็จ' || b.status === 'ยกเลิก';
-    return `<button class="btn-session ${isSelected ? 'selected-' + key : ''}"
-      onclick="doAssignSession('${b.bookingRef}', '${key}', this)"
+    const isClosed   = quota === 0;
+    const isFull     = quota > 0 && assignedCount >= quota;
+    const isDone     = b.status === 'เสร็จ' || b.status === 'ยกเลิก';
+    const selCls     = isSelected ? `sel-${key}` : '';
+    return `<button class="sess-sm ${selCls}"
+      onclick="doAssignSession('${b.bookingRef}','${key}',this)"
       ${isDone || (isClosed && !isSelected) || (isFull && !isSelected) ? 'disabled' : ''}>
-      ${val.icon} ${key}
-      ${quotaHint}
+      ${val.icon}${key}${hint}
     </button>`;
   }).join('');
 
+  // ── Booking date + session ──
+  let bdHtml;
+  if (b.bookingDate) {
+    const bd = new Date(b.bookingDate + 'T12:00:00');
+    const bdDisp = !isNaN(bd)
+      ? `${bd.getDate()} ${TH_MONTHS[bd.getMonth()]} ${bd.getFullYear() + 543}`
+      : b.bookingDate;
+    const sesLabel = b.session
+      ? `<div class="bd-sess">${SESSIONS[b.session]?.icon || ''} ${b.session}</div>` : '';
+    bdHtml = `<div class="bd-assigned">📅 ${bdDisp}</div>${sesLabel}`;
+  } else {
+    bdHtml = `<div class="bd-none">⏳ ยังไม่กำหนด</div>`;
+  }
+
+  // ── Registration time ──
   const regTime = b.timestamp
     ? new Date(b.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
     : '—';
 
+  // ── Receipt has data? ──
+  const hasReceipt = !!(b.receiptDeposit || b.receiptSale);
+  const isDoneOrCancelled = b.status === 'เสร็จ' || b.status === 'ยกเลิก';
+  const rowCls = `booking-row status-${b.status}${isNew ? ' row-new' : ''}`;
+
   return `
-    <div class="queue-card status-${b.status} ${isNew ? 'new-card' : ''}" id="card-${b.bookingRef}">
-      <div class="card-top">
-        <div class="queue-number">${b.queueNo}</div>
-        <div class="customer-info">
-          <div class="customer-name">${b.firstName} ${b.lastName}</div>
-          <div class="customer-phone">📞 ${b.phone}</div>
-          ${sourceBadge}
+    <tr class="${rowCls}" id="card-${b.bookingRef}">
+      <td class="col-indicator"></td>
+      <td style="text-align:center;">
+        <div class="q-num">${b.queueNo}</div>
+      </td>
+      <td>
+        <div class="cust-name">${b.firstName} ${b.lastName}</div>
+        <div class="cust-sub">
+          <span class="cust-phone">📞 ${b.phone}</span>
+          <span class="cust-src ${srcClass}">${srcLabel}</span>
         </div>
+      </td>
+      <td>
+        <div class="model-name">📱 ${b.model}</div>
+        <div class="model-time">🕐 ${regTime} น.</div>
+        ${bdHtml}
+      </td>
+      <td>
+        <div class="sess-row">${sessionBtns}</div>
+      </td>
+      <td>
         <span class="status-badge badge-${b.status}">${getStatusDot(b.status)} ${b.status}</span>
-      </div>
-      <div class="card-model">
-        <span class="model-badge">📱 ${b.model}</span>
-        <span class="booking-date">🕐 ลงทะเบียน ${regTime} น.</span>
-      </div>
-      <div class="session-group">${sessionBtns}</div>
-      <div class="action-group">
-        <button class="btn-done" onclick="doUpdateStatus('${b.bookingRef}', 'เสร็จ')"
-          ${b.status === 'เสร็จ' || b.status === 'ยกเลิก' ? 'disabled style="opacity:0.4"' : ''}>
-          ✅ เสร็จแล้ว
-        </button>
-        <button class="btn-cancel" onclick="doUpdateStatus('${b.bookingRef}', 'ยกเลิก')"
-          ${b.status === 'เสร็จ' || b.status === 'ยกเลิก' ? 'disabled style="opacity:0.4"' : ''}>
-          ❌ ยกเลิก
-        </button>
-        <button class="btn-print" onclick="doPrint(${JSON.stringify(b).replace(/"/g, '&quot;')})">
-          🖨️ พิมพ์
-        </button>
-      </div>
-      <div class="receipt-group">
-        <input class="receipt-input ${b.receiptDeposit ? 'filled' : ''}" type="text"
-          id="deposit-${b.bookingRef}" placeholder="🧾 เลขใบมัดจำ"
-          value="${b.receiptDeposit || ''}"
-          ${b.status === 'ยกเลิก' ? 'disabled' : ''}>
-        <input class="receipt-input ${b.receiptSale ? 'filled' : ''}" type="text"
-          id="sale-${b.bookingRef}" placeholder="🧾 เลขใบขาย"
-          value="${b.receiptSale || ''}"
-          ${b.status === 'ยกเลิก' ? 'disabled' : ''}>
-        <button class="btn-save-receipt"
-          onclick="doSaveReceipt('${b.bookingRef}')"
-          ${b.status === 'ยกเลิก' ? 'disabled' : ''}>
-          💾 บันทึก
-        </button>
-      </div>
-    </div>
+      </td>
+      <td>
+        <div class="act-row">
+          <button class="act-ico act-done" title="เสร็จแล้ว"
+            onclick="doUpdateStatus('${b.bookingRef}','เสร็จ')"
+            ${isDoneOrCancelled ? 'disabled' : ''}>✅</button>
+          <button class="act-ico act-cancel" title="ยกเลิก"
+            onclick="doUpdateStatus('${b.bookingRef}','ยกเลิก')"
+            ${isDoneOrCancelled ? 'disabled' : ''}>❌</button>
+          <button class="act-ico act-print" title="พิมพ์ใบจอง"
+            onclick="doPrint(${JSON.stringify(b).replace(/"/g, '&quot;')})">🖨️</button>
+          <button class="act-ico act-receipt${hasReceipt ? ' has-data' : ''}" title="บันทึกใบเสร็จ"
+            onclick="toggleReceipt('${b.bookingRef}')">🧾</button>
+        </div>
+      </td>
+    </tr>
+    <tr class="receipt-expand" id="receipt-row-${b.bookingRef}" style="display:none;">
+      <td colspan="7">
+        <div class="receipt-inner">
+          <label>🧾 ใบมัดจำ</label>
+          <input class="ri-input ${b.receiptDeposit ? 'filled' : ''}" type="text"
+            id="deposit-${b.bookingRef}" placeholder="เลขใบมัดจำ"
+            value="${b.receiptDeposit || ''}"
+            ${b.status === 'ยกเลิก' ? 'disabled' : ''}>
+          <label>🧾 ใบขาย</label>
+          <input class="ri-input ${b.receiptSale ? 'filled' : ''}" type="text"
+            id="sale-${b.bookingRef}" placeholder="เลขใบขาย"
+            value="${b.receiptSale || ''}"
+            ${b.status === 'ยกเลิก' ? 'disabled' : ''}>
+          <button class="btn-ri-save"
+            onclick="doSaveReceipt('${b.bookingRef}')"
+            ${b.status === 'ยกเลิก' ? 'disabled' : ''}>💾 บันทึก</button>
+        </div>
+      </td>
+    </tr>
   `;
+}
+
+// ─── TOGGLE RECEIPT ROW ───
+function toggleReceipt(bookingRef) {
+  const row = document.getElementById('receipt-row-' + bookingRef);
+  if (!row) return;
+  const isHidden = row.style.display === 'none' || row.style.display === '';
+  row.style.display = isHidden ? 'table-row' : 'none';
+  // highlight receipt button ถ้า expand
+  const btn = document.querySelector(`#card-${bookingRef} .act-receipt`);
+  if (btn) btn.style.background = isHidden ? '#fff3e0' : '';
 }
 
 function getStatusDot(status) {
@@ -1037,6 +1131,9 @@ async function doAssignSession(bookingRef, session, btn) {
         const idx = allBookings.findIndex(b => b.bookingRef === bookingRef);
         if (idx !== -1) allBookings[idx] = result.booking;
       }
+      // sync allQueueDateBookings (Tab ทั้งหมด)
+      const qdi = allQueueDateBookings.findIndex(b => b.bookingRef === bookingRef);
+      if (qdi !== -1) allQueueDateBookings[qdi] = result.booking;
       renderQueue();
       updateStatsFromBookings();
       updateUnassignedBadge();
@@ -1070,6 +1167,9 @@ async function doUpdateStatus(bookingRef, status) {
         const idx = allBookings.findIndex(b => b.bookingRef === bookingRef);
         if (idx !== -1) allBookings[idx].status = status;
       }
+      // sync allQueueDateBookings (Tab ทั้งหมด)
+      const qdi = allQueueDateBookings.findIndex(b => b.bookingRef === bookingRef);
+      if (qdi !== -1) allQueueDateBookings[qdi].status = status;
       renderQueue();
       updateStatsFromBookings();
     } else {
@@ -1694,14 +1794,16 @@ function renderSessionConfig(sessionConfig) {
 
 async function saveSessionConfig() {
   const inputs = document.querySelectorAll('#session-config-body input[data-date][data-session]');
-  const sessions = [];
+  // Group by date → { date, เช้า, บ่าย, เย็น } ตาม format ที่ setConfig ต้องการ
+  const sessionMap = {};
   inputs.forEach(input => {
-    sessions.push({
-      date: input.dataset.date,
-      session: input.dataset.session,
-      value: parseInt(input.value)
-    });
+    const date = input.dataset.date;
+    const ses  = input.dataset.session;
+    const val  = parseInt(input.value);
+    if (!sessionMap[date]) sessionMap[date] = { date, เช้า: -1, บ่าย: -1, เย็น: -1 };
+    sessionMap[date][ses] = isNaN(val) ? -1 : val;
   });
+  const sessions = Object.values(sessionMap);
 
   const statusEl = document.getElementById('session-save-status');
   statusEl.textContent = '⏳ กำลังบันทึก...';
