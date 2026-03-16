@@ -758,8 +758,10 @@ const FIREBASE_CONFIG = {
 
 let _firebaseApp  = null;
 let _firebaseDb   = null;
-let _slotRef      = null;  // Firebase DatabaseReference ที่กำลัง subscribe อยู่
-let _slotCb       = null;  // callback ที่ส่งให้ .on() เพื่อ .off() ได้ตรงตัว
+let _slotRef      = null;  // ref สำหรับ slot chip (subscribe ทีละวัน)
+let _slotCb       = null;
+let _calRef       = null;  // ref สำหรับ calendar (subscribe ระดับ branch = ทุกวัน)
+let _calCb        = null;
 
 function initFirebase() {
   if (_firebaseApp) return;
@@ -802,9 +804,46 @@ function subscribeSlotRealtime(branchId, date) {
 
 function unsubscribeSlotRealtime() {
   if (_slotRef && _slotCb) {
-    _slotRef.off('value', _slotCb);  // ปิด listener ตรงตัว
+    _slotRef.off('value', _slotCb);
     _slotRef = null;
     _slotCb  = null;
+  }
+}
+
+// ─── subscribeCalendarRealtime ────────────────────────────────────────────────
+// subscribe ระดับ /slots/{branchId}/ → รับ update ทุกวันพร้อมกันใน snapshot เดียว
+// เมื่อ GAS push slot update วันไหน → calendar re-render อัตโนมัติ
+// ─────────────────────────────────────────────────────────────────────────────
+function subscribeCalendarRealtime(branchId) {
+  if (!_firebaseDb) return;
+  unsubscribeCalendarRealtime();
+  _calRef = _firebaseDb.ref(`/slots/${branchId}`);
+  _calCb  = _calRef.on('value', snap => {
+    const data = snap.val();
+    if (!data || !branchFullConfig || !branchFullConfig.slotConfig) return;
+    // Merge: อัพเดท used count ใน slotConfig จาก Firebase
+    // วันที่ไม่มีใน Firebase → คง used เดิมจาก API ไว้
+    let changed = false;
+    branchFullConfig.slotConfig.forEach(s => {
+      const key = s.date.replace(/-/g, '');  // "2026-04-11" → "20260411"
+      if (data[key] !== undefined) {
+        const newUsed = data[key].used || 0;
+        if (s.used !== newUsed) { s.used = newUsed; changed = true; }
+      }
+    });
+    // Re-render calendar ถ้าเปิดอยู่ และมีข้อมูลเปลี่ยน
+    if (changed && document.getElementById('cal-overlay').classList.contains('open')) {
+      renderCalendar();
+    }
+    console.log(`[Firebase] calendar updated for branch ${branchId}`);
+  });
+}
+
+function unsubscribeCalendarRealtime() {
+  if (_calRef && _calCb) {
+    _calRef.off('value', _calCb);
+    _calRef = null;
+    _calCb  = null;
   }
 }
 
@@ -891,6 +930,7 @@ async function doLogin() {
       localStorage.setItem('icare_branch', JSON.stringify({ branch: result.branch, password }));
       showLoginError('');
       initFirebase();  // init Firebase RTDB (one-time, safe to call multiple times)
+      if (currentBranch) subscribeCalendarRealtime(currentBranch.id);  // subscribe calendar ทุกวัน
       showMainApp();
     } else {
       showLoginError(result.error || 'เข้าสู่ระบบไม่สำเร็จ');
@@ -916,7 +956,8 @@ function doLogout() {
   allUnassignedBookings = [];
   allQueueDateBookings = [];
   branchFullConfig = null;
-  unsubscribeSlotRealtime();  // ปิด Firebase WebSocket listener
+  unsubscribeSlotRealtime();     // ปิด slot chip listener
+  unsubscribeCalendarRealtime(); // ปิด calendar listener
   if (pollInterval) clearInterval(pollInterval);
   document.getElementById('main-app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
@@ -1695,7 +1736,7 @@ async function doPrint(booking) {
         <div class="print-cond-item"><span class="print-cond-num">8.</span><span>แบตเตอรี่ที่ได้รับการเปลี่ยนไป จะมีการรับประกันเฉพาะตัวแบตเตอรี่ 90 วัน</span></div>
         <div class="print-cond-item"><span class="print-cond-num">9.</span><span>ลูกค้าสามารถทำการรับบริการ ได้ที่สาขาที่ได้ทำเรื่องจองไว้เท่านั้น</span></div>
 
-        <div class="print-cond-title" style="margin-top:8px;">Terms &amp; Condition</div>
+        <div class="print-cond-title" style="margin-top:8px;">Terms &amp; Conditions</div>
         <div class="print-cond-item"><span class="print-cond-num">1.</span><span>This document serves as a battery replacement booking confirmation only.</span></div>
         <div class="print-cond-item"><span class="print-cond-num">2.</span><span>The screen protector must be removed during the battery replacement process and will not be returned.</span></div>
         <div class="print-cond-item"><span class="print-cond-num">3.</span><span>Find My iPhone (FMiP) must be disabled before the service appointment. A full data backup prior to the visit is strongly recommended.</span></div>
@@ -2031,6 +2072,8 @@ window.onload = () => {
       currentPassword = password;
       document.getElementById('input-branch-id').value = branch.id;
       document.getElementById('input-password').value = password;
+      initFirebase();
+      subscribeCalendarRealtime(branch.id);
       showMainApp();
     } catch (e) { localStorage.removeItem('icare_branch'); }
   }
