@@ -140,6 +140,38 @@ body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background:
 }
 .queue-empty .empty-icon { font-size: 40px; margin-bottom: 10px; }
 
+/* ─── Loading States ─── */
+/* Skeleton shimmer */
+@keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+.skeleton-row {
+  height: 58px; border-radius: 8px; margin-bottom: 6px;
+  background: linear-gradient(90deg, #f0f2f5 25%, #e4e8ed 50%, #f0f2f5 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+.skeleton-wrap { background: #fff; border-radius: 12px; padding: 12px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+/* Button spinner — แสดงบน btn ที่กำลัง await */
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+.btn-loading {
+  position: relative !important; color: transparent !important;
+  pointer-events: none !important; opacity: 0.75 !important;
+}
+.btn-loading::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px;
+  border: 2px solid rgba(0,0,0,0.15); border-top-color: #333;
+  border-radius: 50%; animation: btn-spin 0.55s linear infinite;
+}
+/* สำหรับปุ่ม session (สีต่างกัน) */
+.sess-sm.btn-loading::after { border-top-color: #0f3460; }
+/* สำหรับปุ่ม save (พื้นหลังเข้ม) */
+.btn-save-config.btn-loading::after { border-color: rgba(255,255,255,0.3); border-top-color: #fff; }
+
+/* Row lock — ระหว่างบันทึก row นั้นจะ dim + คลิกไม่ได้ */
+.row-locked { opacity: 0.45 !important; pointer-events: none !important; transition: opacity 0.2s; }
+.row-locked td { cursor: not-allowed !important; }
+
 /* ─── Booking Table (ICS-style) ─── */
 @keyframes rowIn { from { opacity:0; background:#e3f2fd; } to { opacity:1; background:transparent; } }
 @keyframes pulse { 0%,100% { background:#fff; } 50% { background:#ffebee; } }
@@ -1007,12 +1039,27 @@ async function loadBookings() {
   }
 }
 
+// ─── QUEUE SKELETON HELPER ───────────────────────────────────────────────────
+// แสดง skeleton shimmer ใน queue-container ระหว่างโหลด
+// n = จำนวนแถว skeleton ที่แสดง (default 4)
+// ─────────────────────────────────────────────────────────────────────────────
+function showQueueSkeleton(n = 4) {
+  const container = document.getElementById('queue-container');
+  if (!container) return;
+  let html = '<div class="skeleton-wrap">';
+  for (let i = 0; i < n; i++) html += '<div class="skeleton-row"></div>';
+  html += '</div>';
+  container.innerHTML = html;
+}
+
 // ─── LOAD SERVICE DATE BOOKINGS ───
 // filterBy:'serviceDate' → bookings ตาม column J (วันให้บริการ) + unassigned + slotSummary
 // ใช้กับ tab: เช้า / บ่าย / เย็น / เสร็จ / ยังไม่กำหนดวัน
 async function loadServiceDateBookings() {
   const serviceDate = document.getElementById('service-date-picker').value;
   if (!serviceDate) return;
+  // แสดง skeleton เฉพาะเมื่อเปลี่ยนวัน (ไม่ใช่ reload จาก loadBookings ที่มี full-screen overlay)
+  if (currentFilter !== 'all') showQueueSkeleton(4);
   try {
     const result = await apiCall('getBookings', { date: serviceDate, filterBy: 'serviceDate' });
     if (result.success) {
@@ -1033,6 +1080,7 @@ async function loadServiceDateBookings() {
     }
   } catch (e) {
     showToast('⚠️', 'ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้');
+    if (currentFilter !== 'all') renderQueue(); // คืน UI ปกติ
   }
 }
 
@@ -1042,13 +1090,16 @@ async function loadServiceDateBookings() {
 async function loadQueueDateBookings() {
   const queueDate = document.getElementById('date-picker').value;
   if (!queueDate) return;
+  if (currentFilter === 'all') showQueueSkeleton(4);
   try {
     const result = await apiCall('getBookings', { date: queueDate }); // no filterBy = Timestamp mode
     if (result.success) {
       allQueueDateBookings = result.bookings || [];
       if (currentFilter === 'all') renderQueue();
     }
-  } catch (e) { /* silent fail สำหรับ tab ทั้งหมด */ }
+  } catch (e) {
+    if (currentFilter === 'all') renderQueue(); // คืน UI ปกติ
+  }
 }
 
 function updateStats(counts, totalSlots) {
@@ -1204,13 +1255,13 @@ function renderRow(b) {
       <td>
         <div class="act-row">
           <button class="act-ico act-done" title="เสร็จแล้ว"
-            onclick="doUpdateStatus('${b.bookingRef}','เสร็จ')"
+            onclick="doUpdateStatus('${b.bookingRef}','เสร็จ',this)"
             ${isDoneOrCancelled ? 'disabled' : ''}>✅</button>
           <button class="act-ico act-cancel" title="ยกเลิก"
-            onclick="doUpdateStatus('${b.bookingRef}','ยกเลิก')"
+            onclick="doUpdateStatus('${b.bookingRef}','ยกเลิก',this)"
             ${isDoneOrCancelled ? 'disabled' : ''}>❌</button>
           <button class="act-ico act-print" title="พิมพ์ใบจอง"
-            onclick="doPrint(${JSON.stringify(b).replace(/"/g, '&quot;')})">🖨️</button>
+            onclick="doPrint(${JSON.stringify(b).replace(/"/g, '&quot;')},this)">🖨️</button>
           <button class="act-ico act-receipt${hasReceipt ? ' has-data' : ''}" title="บันทึกใบเสร็จ"
             onclick="toggleReceipt('${b.bookingRef}')">🧾</button>
         </div>
@@ -1257,23 +1308,24 @@ function getStatusDot(status) {
 async function doAssignSession(bookingRef, session, btn) {
   const serviceDate = document.getElementById('service-date-picker').value
     || document.getElementById('date-picker').value;
+  // ── Loading: lock row + spinner บนปุ่มที่กด ──
+  const rowEl = document.getElementById('card-' + bookingRef);
+  if (rowEl) rowEl.classList.add('row-locked');
+  if (btn)  btn.classList.add('btn-loading');
   try {
     const result = await apiCall('assignSession', { bookingRef, session, staffName: currentBranch.name, serviceDate });
     if (result.success) {
       const unassignedIdx = allUnassignedBookings.findIndex(b => b.bookingRef === bookingRef);
       if (unassignedIdx !== -1) {
-        // booking เดิมอยู่ใน unassigned → ลบออก + เพิ่มเข้า allBookings ถ้า serviceDate ตรง
         allUnassignedBookings.splice(unassignedIdx, 1);
         if (result.booking.bookingDate === serviceDate) {
           allBookings.push(result.booking);
           allBookings.sort((a, b) => a.queueNo - b.queueNo);
         }
       } else {
-        // booking อยู่ใน allBookings → update in-place
         const idx = allBookings.findIndex(b => b.bookingRef === bookingRef);
         if (idx !== -1) allBookings[idx] = result.booking;
       }
-      // sync allQueueDateBookings (Tab ทั้งหมด)
       const qdi = allQueueDateBookings.findIndex(b => b.bookingRef === bookingRef);
       if (qdi !== -1) allQueueDateBookings[qdi] = result.booking;
       renderQueue();
@@ -1281,22 +1333,30 @@ async function doAssignSession(bookingRef, session, btn) {
       updateUnassignedBadge();
       showToast(SESSIONS[session].icon, `กำหนด ${session} แล้ว`, `คิว #${result.booking.queueNo} — ${result.booking.firstName}`);
     } else {
+      // unlock เมื่อ error (re-render จะ re-create ปุ่ม)
+      if (rowEl) rowEl.classList.remove('row-locked');
+      if (btn)  btn.classList.remove('btn-loading');
       showToast('⚠️', 'ข้อผิดพลาด', result.error);
     }
   } catch (e) {
+    if (rowEl) rowEl.classList.remove('row-locked');
+    if (btn)  btn.classList.remove('btn-loading');
     showToast('⚠️', 'ข้อผิดพลาด', 'ไม่สามารถบันทึกได้');
   }
 }
 
 // ─── UPDATE STATUS ───
-async function doUpdateStatus(bookingRef, status) {
+async function doUpdateStatus(bookingRef, status, srcBtn) {
   const label = status === 'เสร็จ' ? 'ยืนยันว่าเสร็จแล้ว?' : 'ยืนยันยกเลิก?';
   if (!confirm(label)) return;
 
+  // ── Loading: lock row + spinner บนปุ่มที่กด ──
+  const rowEl = document.getElementById('card-' + bookingRef);
+  if (rowEl)   rowEl.classList.add('row-locked');
+  if (srcBtn)  srcBtn.classList.add('btn-loading');
   try {
     const result = await apiCall('updateStatus', { bookingRef, status });
     if (result.success) {
-      // ตรวจทั้ง 2 arrays
       const unassignedIdx = allUnassignedBookings.findIndex(b => b.bookingRef === bookingRef);
       if (unassignedIdx !== -1) {
         if (status === 'ยกเลิก') {
@@ -1309,15 +1369,18 @@ async function doUpdateStatus(bookingRef, status) {
         const idx = allBookings.findIndex(b => b.bookingRef === bookingRef);
         if (idx !== -1) allBookings[idx].status = status;
       }
-      // sync allQueueDateBookings (Tab ทั้งหมด)
       const qdi = allQueueDateBookings.findIndex(b => b.bookingRef === bookingRef);
       if (qdi !== -1) allQueueDateBookings[qdi].status = status;
       renderQueue();
       updateStatsFromBookings();
     } else {
+      if (rowEl)  rowEl.classList.remove('row-locked');
+      if (srcBtn) srcBtn.classList.remove('btn-loading');
       showToast('⚠️', 'ข้อผิดพลาด', result.error);
     }
   } catch (e) {
+    if (rowEl)  rowEl.classList.remove('row-locked');
+    if (srcBtn) srcBtn.classList.remove('btn-loading');
     showToast('⚠️', 'ข้อผิดพลาด', 'ไม่สามารถบันทึกได้');
   }
 }
@@ -1612,11 +1675,16 @@ function showToast(icon, title, sub) {
 }
 
 // ─── PRINT ───
-async function doPrint(booking) {
-  // ถ้า config ยังไม่โหลด → โหลดก่อน (เพื่อให้ราคาแสดง)
-  if (!branchFullConfig) {
-    showToast('⏳', 'กำลังโหลดข้อมูลราคา...', 'รอสักครู่');
-    await prefetchBranchConfig();
+async function doPrint(booking, srcBtn) {
+  // spinner บนปุ่ม print ระหว่างโหลด config (ถ้ายังไม่ได้ load)
+  if (srcBtn) srcBtn.classList.add('btn-loading');
+  try {
+    if (!branchFullConfig) {
+      showToast('⏳', 'กำลังโหลดข้อมูลราคา...', 'รอสักครู่');
+      await prefetchBranchConfig();
+    }
+  } finally {
+    if (srcBtn) srcBtn.classList.remove('btn-loading');
   }
   const session = booking.session;
   const sessionInfo = session ? SESSIONS[session] : null;
@@ -1959,7 +2027,6 @@ function renderSessionConfig(sessionConfig) {
 
 async function saveSessionConfig() {
   const inputs = document.querySelectorAll('#session-config-body input[data-date][data-session]');
-  // Group by date → { date, เช้า, บ่าย, เย็น } ตาม format ที่ setConfig ต้องการ
   const sessionMap = {};
   inputs.forEach(input => {
     const date = input.dataset.date;
@@ -1971,8 +2038,9 @@ async function saveSessionConfig() {
   const sessions = Object.values(sessionMap);
 
   const statusEl = document.getElementById('session-save-status');
-  statusEl.textContent = '⏳ กำลังบันทึก...';
-  statusEl.className = 'save-status';
+  const saveBtn  = document.querySelector('[onclick="saveSessionConfig()"]');
+  statusEl.textContent = ''; statusEl.className = 'save-status';
+  if (saveBtn) saveBtn.classList.add('btn-loading');
 
   try {
     const result = await apiCall('setConfig', { slots: [], quotas: [], sessions });
@@ -1987,6 +2055,8 @@ async function saveSessionConfig() {
   } catch(e) {
     statusEl.textContent = '❌ เชื่อมต่อไม่ได้';
     statusEl.className = 'save-status save-err';
+  } finally {
+    if (saveBtn) saveBtn.classList.remove('btn-loading');
   }
 }
 
@@ -2012,15 +2082,16 @@ async function saveSlotConfig() {
   });
 
   const statusEl = document.getElementById('slot-save-status');
-  statusEl.textContent = '⏳ กำลังบันทึก...';
-  statusEl.className = 'save-status';
+  const saveBtn  = document.querySelector('[onclick="saveSlotConfig()"]');
+  statusEl.textContent = ''; statusEl.className = 'save-status';
+  if (saveBtn) saveBtn.classList.add('btn-loading');
 
   try {
     const result = await apiCall('setConfig', { slots, quotas: [] });
     if (result.success) {
       statusEl.textContent = `✅ บันทึกแล้ว (${result.slotsUpdated} วัน)`;
       statusEl.className = 'save-status save-ok';
-      branchFullConfig = null; // reset cache
+      branchFullConfig = null;
     } else {
       statusEl.textContent = '❌ ' + result.error;
       statusEl.className = 'save-status save-err';
@@ -2028,6 +2099,8 @@ async function saveSlotConfig() {
   } catch(e) {
     statusEl.textContent = '❌ เชื่อมต่อไม่ได้';
     statusEl.className = 'save-status save-err';
+  } finally {
+    if (saveBtn) saveBtn.classList.remove('btn-loading');
   }
 }
 
@@ -2039,15 +2112,16 @@ async function saveQuotaConfig() {
   });
 
   const statusEl = document.getElementById('quota-save-status');
-  statusEl.textContent = '⏳ กำลังบันทึก...';
-  statusEl.className = 'save-status';
+  const saveBtn  = document.querySelector('[onclick="saveQuotaConfig()"]');
+  statusEl.textContent = ''; statusEl.className = 'save-status';
+  if (saveBtn) saveBtn.classList.add('btn-loading');
 
   try {
     const result = await apiCall('setConfig', { slots: [], quotas });
     if (result.success) {
       statusEl.textContent = `✅ บันทึกแล้ว (${result.quotasUpdated} รุ่น)`;
       statusEl.className = 'save-status save-ok';
-      branchFullConfig = null; // reset cache
+      branchFullConfig = null;
     } else {
       statusEl.textContent = '❌ ' + result.error;
       statusEl.className = 'save-status save-err';
@@ -2055,6 +2129,8 @@ async function saveQuotaConfig() {
   } catch(e) {
     statusEl.textContent = '❌ เชื่อมต่อไม่ได้';
     statusEl.className = 'save-status save-err';
+  } finally {
+    if (saveBtn) saveBtn.classList.remove('btn-loading');
   }
 }
 
