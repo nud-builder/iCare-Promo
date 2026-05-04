@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>iCare Branch Visit Form</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+  /* ── CONFIG: วาง Apps Script URL ที่นี่หลัง Deploy ── */
+  /* แก้ใน <script> ด้านล่าง: const APPS_SCRIPT_URL = '...' */
+
+  :root {
+    --s1: #1d1d1f; --s2: #34c759; --s3: #0071e3;
+    --s4: #af52de; --s5: #ff9500; --danger: #ff3b30;
+    --bg: #f2f2f7; --card: #ffffff; --border: #e5e5ea;
+    --text: #1c1c1e; --sub: #6c6c70; --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); font-size: 16px; }
+
+  /* ── TOP BAR ── */
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px 8px;
+  }
+  #topbar .tb-row1 { display: flex; justify-content: space-between; align-items: center; }
+  #topbar .tb-title { font-size: 17px; font-weight: 700; }
+  #topbar .tb-branch { font-size: 13px; color: var(--sub); margin-top: 2px; }
+  #score-bubble {
+    background: var(--s3); color: white;
+    font-size: 15px; font-weight: 700;
+    padding: 6px 14px; border-radius: 20px;
+    min-width: 80px; text-align: center;
+  }
+  #progress-bar {
+    height: 4px; background: var(--border); border-radius: 2px;
+    margin-top: 10px; overflow: hidden;
+  }
+  #progress-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, var(--s3), var(--s2));
+    transition: width 0.4s ease;
+  }
+  #step-label { font-size: 11px; color: var(--sub); margin-top: 4px; }
+
+  /* ── MAIN ── */
+  main { padding: 130px 0 120px; }
+  .step { display: none; padding: 0 16px; }
+  .step.active { display: block; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    margin-bottom: 14px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px;
+    color: white; font-weight: 700; font-size: 15px;
+  }
+  .card-header .sec-icon { font-size: 18px; }
+  .card-header .sec-badge {
+    margin-left: auto; font-size: 11px; font-weight: 600;
+    background: rgba(255,255,255,0.25); border-radius: 12px; padding: 3px 10px;
+  }
+
+  /* ── FORM FIELDS (Step 0) ── */
+  .field { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .field:last-child { border-bottom: none; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--sub); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; border: none; outline: none;
+    font-family: 'Sarabun', sans-serif; font-size: 17px;
+    color: var(--text); background: transparent;
+    padding: 0; -webkit-appearance: none;
+  }
+  .field input[type="date"] { color: var(--text); }
+
+  /* ── ITEM ROW ── */
+  .item-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+  }
+  .item-row:last-of-type { border-bottom: none; }
+  .item-content { flex: 1; min-width: 0; }
+  .item-label { font-size: 15px; font-weight: 500; line-height: 1.4; margin-bottom: 2px; }
+  .item-note  { font-size: 12px; color: var(--sub); line-height: 1.4; }
+
+  /* ── RATING BUTTONS (วงกลม) ── */
+  .rating-group { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+  .rating-btn {
+    width: 40px; height: 40px; flex: 0 0 40px;
+    border: 2.5px solid var(--border); border-radius: 50%;
+    background: #fafafa; font-family: 'Sarabun', sans-serif;
+    font-size: 17px; font-weight: 700; color: var(--sub);
+    cursor: pointer; transition: all 0.15s ease;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+  }
+  .rating-btn .r-label { display: none; }
+  .rating-btn[data-val="1"].selected { border-color: var(--danger); background: #fff0ef; color: var(--danger); }
+  .rating-btn[data-val="2"].selected { border-color: #ff9500; background: #fff8ec; color: #ff9500; }
+  .rating-btn[data-val="3"].selected { border-color: var(--s2); background: #edfaf2; color: #1a9e3f; }
+  .rating-btn:active { transform: scale(0.92); }
+
+  /* ── GROUP LABEL inside card ── */
+  .group-lbl {
+    background: #f9f9fb; padding: 8px 16px;
+    font-size: 11px; font-weight: 700; color: var(--sub);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── NOTES ── */
+  .notes-field { padding: 12px 16px; }
+  .notes-field label { font-size: 12px; font-weight: 600; color: var(--sub); text-transform: uppercase; letter-spacing: 0.4px; display: block; margin-bottom: 6px; }
+  .notes-field textarea {
+    width: 100%; border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; font-family: 'Sarabun', sans-serif; font-size: 15px;
+    color: var(--text); resize: none; outline: none;
+    background: #f9f9fb; min-height: 80px;
+  }
+  .notes-field textarea:focus { border-color: var(--s3); background: white; }
+
+  /* ── SECTION SCORE PREVIEW ── */
+  .sec-score-bar {
+    margin: 0 16px 14px;
+    background: var(--card); border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sec-score-bar .ssl { font-size: 13px; color: var(--sub); }
+  .sec-score-bar .ssv { font-size: 22px; font-weight: 700; color: var(--text); }
+  .sec-score-bar .ssmax { font-size: 12px; color: var(--sub); }
+
+  /* ── ACTION ITEMS ── */
+  .action-card { background: var(--card); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .action-card .ac-header { background: var(--s1); color: white; padding: 10px 16px; font-weight: 700; font-size: 14px; }
+  .action-field { padding: 10px 16px; border-bottom: 1px solid var(--border); }
+  .action-field:last-child { border-bottom: none; }
+  .action-field label { font-size: 11px; font-weight: 600; color: var(--sub); text-transform: uppercase; letter-spacing: 0.4px; display: block; margin-bottom: 5px; }
+  .action-field input, .action-field select {
+    width: 100%; border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 9px 12px; font-family: 'Sarabun', sans-serif; font-size: 15px;
+    color: var(--text); background: white; outline: none; -webkit-appearance: none;
+  }
+  .action-field input:focus, .action-field select:focus { border-color: var(--s3); }
+  .priority-row { display: flex; gap: 8px; }
+  .pri-btn {
+    flex: 1; padding: 10px 0; border-radius: 8px; border: 2px solid var(--border);
+    background: white; font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .pri-btn[data-p="High"].sel { border-color: var(--danger); background: #fff0ef; color: var(--danger); }
+  .pri-btn[data-p="Medium"].sel { border-color: #ff9500; background: #fff8ec; color: #ff9500; }
+  .pri-btn[data-p="Low"].sel { border-color: var(--s2); background: #edfaf2; color: #1a9e3f; }
+
+  /* ── REVIEW ── */
+  .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .rev-card { background: var(--card); border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .rev-card .rv-label { font-size: 11px; color: var(--sub); font-weight: 600; margin-bottom: 4px; }
+  .rev-card .rv-val { font-size: 24px; font-weight: 700; }
+  .rev-card .rv-max { font-size: 11px; color: var(--sub); }
+  .total-card { background: var(--s1); color: white; border-radius: 14px; padding: 20px; text-align: center; margin-bottom: 14px; }
+  .total-card .tc-label { font-size: 14px; opacity: 0.7; }
+  .total-card .tc-score { font-size: 52px; font-weight: 700; line-height: 1; margin: 8px 0 4px; }
+  .total-card .tc-status { font-size: 14px; font-weight: 600; }
+
+  /* ── NAV BUTTONS ── */
+  #bottomnav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px; display: flex; gap: 10px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .nav-btn {
+    flex: 1; height: 52px; border-radius: 14px; border: none;
+    font-family: 'Sarabun', sans-serif; font-size: 17px; font-weight: 700;
+    cursor: pointer; transition: transform 0.1s, opacity 0.1s;
+  }
+  .nav-btn:active { transform: scale(0.97); }
+  #btn-back { background: var(--border); color: var(--sub); flex: 0.6; }
+  #btn-next { background: var(--s3); color: white; }
+  #btn-submit { background: var(--s2); color: white; display: none; }
+
+  /* ── LOADING OVERLAY ── */
+  #loading {
+    display: none; position: fixed; inset: 0; z-index: 999;
+    background: rgba(0,0,0,0.55); align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+  }
+  #loading.show { display: flex; }
+  .spinner {
+    width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading p { color: white; font-size: 16px; font-weight: 600; }
+
+  /* ── SUCCESS ── */
+  #success {
+    display: none; position: fixed; inset: 0; z-index: 998;
+    background: var(--s2); align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px; text-align: center; padding: 40px;
+  }
+  #success.show { display: flex; }
+  #success .tick { font-size: 80px; }
+  #success h2 { color: white; font-size: 28px; font-weight: 700; }
+  #success p { color: rgba(255,255,255,0.85); font-size: 16px; line-height: 1.6; }
+  #btn-reset {
+    margin-top: 20px; padding: 14px 36px; border: none; border-radius: 14px;
+    background: white; color: var(--s2); font-family: 'Sarabun', sans-serif;
+    font-size: 17px; font-weight: 700; cursor: pointer;
+  }
+
+  /* ── MISC ── */
+  .hint { font-size: 12px; color: var(--sub); text-align: center; padding: 8px 0 4px; }
+  .section-title-big {
+    font-size: 22px; font-weight: 700; padding: 4px 0 6px;
+  }
+  .visit-info-summary {
+    background: var(--card); border-radius: var(--radius); padding: 14px 16px;
+    margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .vis-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .vis-row:last-child { border-bottom: none; }
+  .vis-row .vr-k { color: var(--sub); }
+  .vis-row .vr-v { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div class="tb-row1">
+    <div>
+      <div class="tb-title">iCare — Branch Visit</div>
+      <div class="tb-branch" id="tb-branch-name">กรุณากรอกข้อมูลสาขา</div>
+    </div>
+    <div id="score-bubble">0 / 100</div>
+  </div>
+  <div id="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
+  <div id="step-label">ขั้นตอนที่ 1 จาก 8</div>
+</div>
+
+<!-- MAIN -->
+<main>
+
+  <!-- ── STEP 0: VISIT INFO ── -->
+  <div class="step active" id="step-0">
+    <div style="padding:0 0 14px"><div class="section-title-big">📋 ข้อมูลการ Visit</div></div>
+    <div class="card">
+      <div class="field">
+        <label>สาขา / Branch</label>
+        <select id="f-branch" onchange="updateBranchLabel()">
+          <option value="">-- เลือกสาขา --</option>
+          <option>Central Phitsanulok</option>
+          <option>Mega Bangna</option>
+          <option>Central Chiangmai Festival</option>
+          <option>Central Chiangmai Airport</option>
+          <option>MAYA Chiangmai</option>
+          <option>สาขาอื่น (ระบุใน BM)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>วันที่ Visit</label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="field">
+        <label>Branch Manager</label>
+        <input type="text" id="f-bm" placeholder="ชื่อ BM" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Area Manager (Visitor)</label>
+        <input type="text" id="f-visitor" value="Thanongsak" autocomplete="off">
+      </div>
+    </div>
+    <p class="hint">กรอกข้อมูลพื้นฐานก่อนเริ่ม Checklist</p>
+  </div>
+
+  <!-- ── STEP 1: SERVICE OPERATIONS ── -->
+  <div class="step" id="step-1">
+    <div class="card">
+      <div class="card-header" style="background:var(--s1)">
+        <span class="sec-icon">🔧</span> งานบริการ — Service Operations
+        <span class="sec-badge">25 คะแนน</span>
+      </div>
+
+      <div class="group-lbl">📥 การรับงาน (Intake)</div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">Staff ทักทายและเริ่มให้บริการภายใน 2 นาที</div><div class="item-note">สังเกตขณะลูกค้าเดินเข้า — มีการ Greet หรือปล่อยรอ?</div></div>
+        <div class="rating-group" data-key="s1_greet">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">Staff ตรวจสอบอาการเบื้องต้นก่อนเปิดงาน</div><div class="item-note">ถามอาการ ดูหน้าจอ เช็ค Liquid/Physical damage</div></div>
+        <div class="rating-group" data-key="s1_diagnose">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">แจ้ง Estimate ราคา + TAT ให้ลูกค้าก่อนรับงาน</div><div class="item-note">ลูกค้าต้องรู้ก่อนว่าจะใช้เวลานานแค่ไหน และราคาประมาณเท่าไหร่</div></div>
+        <div class="rating-group" data-key="s1_estimate">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">เปิดงานในระบบ (GSX) ครบถ้วน ข้อมูลถูกต้อง</div><div class="item-note">ไม่มี Job ค้างเปิด หรือข้อมูลผิด</div></div>
+        <div class="rating-group" data-key="s1_gsx_open">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+
+      <div class="group-lbl">⚙️ การจัดการงาน (Throughput)</div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">เวลาซ่อมเฉลี่ยอยู่ในกรอบที่กำหนด</div><div class="item-note">เช็คว่ามีงานค้างนานเกิน 5 วันหรือไม่</div></div>
+        <div class="rating-group" data-key="s1_tat">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">มีระบบจัดลำดับงาน / Queue</div><div class="item-note">ไม่ขึ้นอยู่กับ Tech คนเดียว</div></div>
+        <div class="rating-group" data-key="s1_queue">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">Workbench สะอาด จัดระเบียบ ไม่มีงานปนกัน</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s1_workbench">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+
+      <div class="group-lbl">📤 การส่งงาน (Output)</div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ตรวจสอบคุณภาพงานก่อนส่งเครื่องคืนลูกค้าทุกชิ้น</div><div class="item-note">เช็ค Function ครบ ไม่มีรอยขีดข่วนใหม่</div></div>
+        <div class="rating-group" data-key="s1_qc">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">Staff อธิบายงานที่ซ่อมให้ลูกค้าฟังก่อนรับเครื่องคืน</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s1_explain">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">เก็บเงินถูกต้อง ตรงตาม GSX</div><div class="item-note">ไม่ขาด ไม่เกิน</div></div>
+        <div class="rating-group" data-key="s1_billing">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ติดตามลูกค้าตามวันนัดทุกราย</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s1_followup">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+
+      <div class="notes-field">
+        <label>หมายเหตุ — งานบริการ</label>
+        <textarea id="s1_notes" placeholder="บันทึกปัญหาที่พบ..."></textarea>
+      </div>
+    </div>
+    <div class="sec-score-bar">
+      <span class="ssl">คะแนน Section นี้</span>
+      <span><span class="ssv" id="s1-score-preview">0</span><span class="ssmax"> / 25</span></span>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: STOCK & INVENTORY ── -->
+  <div class="step" id="step-2">
+    <div class="card">
+      <div class="card-header" style="background:var(--s2)">
+        <span class="sec-icon">📦</span> สต็อคและอะไหล่ — Stock &amp; Inventory
+        <span class="sec-badge">25 คะแนน</span>
+      </div>
+
+      <div class="group-lbl">🔧 Parts สำหรับซ่อม</div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">อะไหล่ที่ใช้บ่อย (Battery, Display) มีพร้อมในร้าน</div><div class="item-note">มีงานค้างเพราะขาดอะไหล่หรือเปล่า?</div></div>
+        <div class="rating-group" data-key="s2_fastparts">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ไม่มีงานค้างเพราะรออะไหล่นานเกิน 7 วัน</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s2_nobacklog">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">Stock Count ตรงกับระบบ — ไม่มี Parts หาย</div><div class="item-note">สุ่มนับ 5–10 รายการเทียบกับระบบ</div></div>
+        <div class="rating-group" data-key="s2_stockcount">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ไม่มี Parts Expired / Obsolete ค้างในสต็อค</div><div class="item-note">Parts รุ่นเก่าที่ไม่ได้ใช้แล้วกินต้นทุนและสร้างความสับสน</div></div>
+        <div class="rating-group" data-key="s2_noexpired">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">จัดเก็บ Parts เป็นระเบียบ มี Label แยก Category</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s2_storagelabel">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">มีกระบวนการสั่ง Parts ชัดเจน — ใครอนุมัติ ใครติดตาม</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s2_orderprocess">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+
+      <div class="group-lbl">🛍️ Accessory / Walk-in Sales</div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">สินค้า Accessory มีพร้อมขาย ไม่ขาด</div><div class="item-note">Case, Charger, Cable, Screen Protector</div></div>
+        <div class="rating-group" data-key="s2_accessory">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">สินค้าที่ลูกค้าเปลี่ยนได้ทันทีในร้านมีพร้อม</div><div class="item-note">Battery, Display — ถ้ามีพร้อม ลูกค้ารอไม่นาน = Revenue เพิ่ม</div></div>
+        <div class="rating-group" data-key="s2_walkinsale">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ป้ายราคาสินค้าและบริการติดชัดเจน ลูกค้าดูเองได้</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s2_pricetag">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ตรวจสอบ Stock ประจำ (Daily/Weekly) ไม่ให้ขาด</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s2_stockcheck">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+
+      <div class="group-lbl">🔄 Exchange Unit</div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">Exchange Unit มีพร้อม ไม่ขาด</div><div class="item-note">รุ่นที่ใช้บ่อย ผ่าน Vintage Check แล้ว</div></div>
+        <div class="rating-group" data-key="s2_exunit">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">Staff รู้ขั้นตอน Exchange ครบถ้วน</div><div class="item-note">ถ้า Staff ไม่รู้ก็เสียโอกาสขาย</div></div>
+        <div class="rating-group" data-key="s2_exknow">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">เครื่องที่รับจากลูกค้า (เสีย) ถูก Log และส่งต่อถูกต้อง</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s2_exdefect">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+
+      <div class="notes-field">
+        <label>หมายเหตุ — สต็อคและอะไหล่</label>
+        <textarea id="s2_notes" placeholder="บันทึกปัญหาที่พบ..."></textarea>
+      </div>
+    </div>
+    <div class="sec-score-bar">
+      <span class="ssl">คะแนน Section นี้</span>
+      <span><span class="ssv" id="s2-score-preview">0</span><span class="ssmax"> / 25</span></span>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: REVENUE ── -->
+  <div class="step" id="step-3">
+    <div class="card">
+      <div class="card-header" style="background:var(--s3)">
+        <span class="sec-icon">💰</span> Revenue &amp; Sales Behavior
+        <span class="sec-badge">20 คะแนน</span>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">Staff แนะนำ Exchange ให้ลูกค้าที่เหมาะสม</div><div class="item-note">เครื่องเก่า / ค่าซ่อมสูง = โอกาส Exchange</div></div>
+        <div class="rating-group" data-key="s3_offerex">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">Staff แนะนำสินค้าเสริมให้ลูกค้าหลังรับงาน</div><div class="item-note">Case กันกระแทก, AppleCare, Screen Protector</div></div>
+        <div class="rating-group" data-key="s3_upsell">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">จำนวนงานในระบบเทียบกับ Capacity จริงของร้าน</div><div class="item-note">ถ้างานน้อยกว่าที่รับได้ = ลูกค้าเดินออก หรือหาลูกค้าไม่พอ</div></div>
+        <div class="rating-group" data-key="s3_jobvscap">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ช่องทาง Delivery / Drop_APP ถูกใช้งาน Staff รู้จัก</div><div class="item-note">Staff รับงานผ่านช่องทางนี้อยู่จริงไหม?</div></div>
+        <div class="rating-group" data-key="s3_delivery">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">สัดส่วนงาน OOW กับ In-Warranty เป็นอย่างไร</div><div class="item-note">OOW มาก = Margin ดี, In-Warranty มาก = Margin ต่ำ</div></div>
+        <div class="rating-group" data-key="s3_revmix">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">Staff รู้เป้าหมายของตัวเองและของสาขา</div><div class="item-note">BM สื่อสาร Target ให้ทีมรู้สม่ำเสมอไหม</div></div>
+        <div class="rating-group" data-key="s3_target">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="notes-field">
+        <label>หมายเหตุ — Revenue และการขาย</label>
+        <textarea id="s3_notes" placeholder="บันทึกปัญหาที่พบ..."></textarea>
+      </div>
+    </div>
+    <div class="sec-score-bar">
+      <span class="ssl">คะแนน Section นี้</span>
+      <span><span class="ssv" id="s3-score-preview">0</span><span class="ssmax"> / 20</span></span>
+    </div>
+  </div>
+
+  <!-- ── STEP 4: PEOPLE ── -->
+  <div class="step" id="step-4">
+    <div class="card">
+      <div class="card-header" style="background:var(--s4)">
+        <span class="sec-icon">👥</span> คนและทีม — People &amp; Productivity
+        <span class="sec-badge">20 คะแนน</span>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">จำนวนพนักงานจริงตรงกับที่ Budget ไว้</div><div class="item-note">คนเกิน = ต้นทุนสูง, คนขาด = งานตก</div></div>
+        <div class="rating-group" data-key="s4_headcount">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ผลงานต่อคน () อยู่ในระดับที่ยอมรับได้</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s4_productivity">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ช่างมี Apple Certification ครบตาม Tier</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s4_cert">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">BM มีภาวะผู้นำ ทีมมีทิศทางชัดเจน</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s4_leadership">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ขวัญกำลังใจทีมดี Staff กล้าพูดปัญหา</div><div class="item-note">คุยตรงๆ กับ Staff ว่ามีปัญหาอะไร</div></div>
+        <div class="rating-group" data-key="s4_morale">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">คนไม่ออกบ่อย Skill ของทีมต่อเนื่อง</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s4_turnover">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ช่วง Traffic น้อย Staff ใช้เวลาให้เป็นประโยชน์</div><div class="item-note">ทำ Prep งาน หรือนั่งเฉย / ดูมือถือ?</div></div>
+        <div class="rating-group" data-key="s4_deadhours">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="notes-field">
+        <label>หมายเหตุ — ทีมและบุคลากร</label>
+        <textarea id="s4_notes" placeholder="บันทึกปัญหาที่พบ..."></textarea>
+      </div>
+    </div>
+    <div class="sec-score-bar">
+      <span class="ssl">คะแนน Section นี้</span>
+      <span><span class="ssv" id="s4-score-preview">0</span><span class="ssmax"> / 20</span></span>
+    </div>
+  </div>
+
+  <!-- ── STEP 5: CX ── -->
+  <div class="step" id="step-5">
+    <div class="card">
+      <div class="card-header" style="background:var(--s5)">
+        <span class="sec-icon">⭐</span> Customer Experience
+        <span class="sec-badge">10 คะแนน</span>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ร้านสะอาด ป้ายราคาชัด ดูน่าเข้า</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s5_visual">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ไม่มีลูกค้าเดินออกก่อนได้รับบริการ</div><div class="item-note"></div></div>
+        <div class="rating-group" data-key="s5_walkout">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">ลูกค้ารอรับบริการไม่เกิน 5 นาที (ช่วงปกติ)</div><div class="item-note">ไม่นับช่วง Rush</div></div>
+        <div class="rating-group" data-key="s5_waittime">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="item-row">
+        <div class="item-content"><div class="item-label">รับเรื่องร้องเรียนอย่างเป็นระบบ ไม่โยนความรับผิดชอบ</div><div class="item-note">มีการ Follow-up ทุกเคส</div></div>
+        <div class="rating-group" data-key="s5_complaint">
+          <button class="rating-btn" data-val="1">1</button>
+          <button class="rating-btn" data-val="2">2</button>
+          <button class="rating-btn" data-val="3">3</button>
+        </div>
+      </div>
+      <div class="notes-field">
+        <label>หมายเหตุ — ประสบการณ์ลูกค้า</label>
+        <textarea id="s5_notes" placeholder="บันทึกปัญหาที่พบ..."></textarea>
+      </div>
+    </div>
+    <div class="sec-score-bar">
+      <span class="ssl">คะแนน Section นี้</span>
+      <span><span class="ssv" id="s5-score-preview">0</span><span class="ssmax"> / 10</span></span>
+    </div>
+  </div>
+
+  <!-- ── STEP 6: ACTION ITEMS ── -->
+  <div class="step" id="step-6">
+    <div style="padding:0 0 14px"><div class="section-title-big">✅ Action Items</div></div>
+    <p style="color:var(--sub);font-size:14px;margin-bottom:14px;">กรอกสิ่งที่ต้องดำเนินการหลัง Visit (ไม่บังคับครบ 5 ข้อ)</p>
+    <div id="action-list"></div>
+  </div>
+
+  <!-- ── STEP 7: REVIEW & SUBMIT ── -->
+  <div class="step" id="step-7">
+    <div style="padding:0 0 14px"><div class="section-title-big">📊 สรุปผล Visit</div></div>
+
+    <div class="total-card" id="total-card">
+      <div class="tc-label">คะแนนรวม</div>
+      <div class="tc-score" id="total-score-big">0</div>
+      <div class="tc-status" id="total-status">—</div>
+    </div>
+
+    <div class="review-grid">
+      <div class="rev-card"><div class="rv-label">Service Ops</div><div class="rv-val" id="rv-s1">—</div><div class="rv-max">/ 25</div></div>
+      <div class="rev-card"><div class="rv-label">Stock</div><div class="rv-val" id="rv-s2">—</div><div class="rv-max">/ 25</div></div>
+      <div class="rev-card"><div class="rv-label">Revenue</div><div class="rv-val" id="rv-s3">—</div><div class="rv-max">/ 20</div></div>
+      <div class="rev-card"><div class="rv-label">People</div><div class="rv-val" id="rv-s4">—</div><div class="rv-max">/ 20</div></div>
+      <div class="rev-card" style="grid-column:span 2"><div class="rv-label">Customer Experience</div><div class="rv-val" id="rv-s5">—</div><div class="rv-max">/ 10</div></div>
+    </div>
+
+    <div class="visit-info-summary" id="visit-summary"></div>
+    <p class="hint" style="margin-bottom:8px">ตรวจสอบข้อมูลก่อนกด Submit</p>
+  </div>
+
+</main>
+
+<!-- BOTTOM NAV -->
+<div id="bottomnav">
+  <button class="nav-btn" id="btn-back" onclick="prevStep()">← ย้อนกลับ</button>
+  <button class="nav-btn" id="btn-next" onclick="nextStep()">ถัดไป →</button>
+  <button class="nav-btn" id="btn-submit" onclick="submitForm()">📤 บันทึก Visit</button>
+</div>
+
+<!-- LOADING -->
+<div id="loading"><div class="spinner"></div><p>กำลังบันทึก...</p></div>
+
+<!-- SUCCESS -->
+<div id="success">
+  <div class="tick">✅</div>
+  <h2>บันทึกสำเร็จ!</h2>
+  <p id="success-msg"></p>
+  <button class="btn-reset" id="btn-reset" onclick="resetForm()">เริ่ม Visit ใหม่</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIG — วาง URL หลัง Deploy Apps Script
+// ══════════════════════════════════════════
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJSgIt1K4IxfHzFShKsh-XkC2_l61OWzCMyQvF8pGu_Zs9w3qXTYB8Cu1_lhQESdbO/exec';
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let currentStep = 0;
+const TOTAL_STEPS = 8; // 0–7
+
+const SECTION_CONFIG = [
+  { key: 's1', items: ['s1_greet','s1_diagnose','s1_estimate','s1_gsx_open','s1_tat','s1_queue','s1_workbench','s1_qc','s1_explain','s1_billing','s1_followup'], max: 25 },
+  { key: 's2', items: ['s2_fastparts','s2_nobacklog','s2_stockcount','s2_noexpired','s2_storagelabel','s2_orderprocess','s2_accessory','s2_walkinsale','s2_pricetag','s2_stockcheck','s2_exunit','s2_exknow','s2_exdefect'], max: 25 },
+  { key: 's3', items: ['s3_offerex','s3_upsell','s3_jobvscap','s3_delivery','s3_revmix','s3_target'], max: 20 },
+  { key: 's4', items: ['s4_headcount','s4_productivity','s4_cert','s4_leadership','s4_morale','s4_turnover','s4_deadhours'], max: 20 },
+  { key: 's5', items: ['s5_visual','s5_walkout','s5_waittime','s5_complaint'], max: 10 },
+];
+
+const formData = {};
+const actions = [1,2,3,4,5].map(i => ({ text:'', priority:'', owner:'', deadline:'' }));
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Set today's date
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+
+  // Bind rating buttons
+  document.querySelectorAll('.rating-group').forEach(group => {
+    const key = group.dataset.key;
+    group.querySelectorAll('.rating-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        group.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        formData[key] = parseInt(btn.dataset.val);
+        updateScores();
+      });
+    });
+  });
+
+  // Build action items
+  buildActionItems();
+  updateUI();
+});
+
+// ══════════════════════════════════════════
+//  BUILD ACTION ITEMS
+// ══════════════════════════════════════════
+function buildActionItems() {
+  const container = document.getElementById('action-list');
+  container.innerHTML = '';
+  actions.forEach((_, i) => {
+    const card = document.createElement('div');
+    card.className = 'action-card';
+    card.innerHTML = `
+      <div class="ac-header">Action ${i+1}</div>
+      <div class="action-field">
+        <label>สิ่งที่ต้องทำ</label>
+        <input type="text" id="ac${i}_text" placeholder="ระบุ Action..." oninput="actions[${i}].text=this.value">
+      </div>
+      <div class="action-field">
+        <label>Priority</label>
+        <div class="priority-row">
+          <button class="pri-btn" data-p="High" onclick="setPriority(${i},'High',this)">🔴 High</button>
+          <button class="pri-btn" data-p="Medium" onclick="setPriority(${i},'Medium',this)">🟡 Medium</button>
+          <button class="pri-btn" data-p="Low" onclick="setPriority(${i},'Low',this)">🟢 Low</button>
+        </div>
+      </div>
+      <div class="action-field">
+        <label>ผู้รับผิดชอบ</label>
+        <input type="text" id="ac${i}_owner" placeholder="ชื่อ / ตำแหน่ง" oninput="actions[${i}].owner=this.value">
+      </div>
+      <div class="action-field">
+        <label>Deadline</label>
+        <input type="date" id="ac${i}_deadline" oninput="actions[${i}].deadline=this.value">
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function setPriority(idx, p, btn) {
+  actions[idx].priority = p;
+  btn.closest('.priority-row').querySelectorAll('.pri-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+// ══════════════════════════════════════════
+//  SCORE CALCULATION
+// ══════════════════════════════════════════
+function calcSectionScore(config) {
+  const rawMax = config.items.length * 3;
+  const raw = config.items.reduce((s, k) => s + (formData[k] || 0), 0);
+  return Math.round((raw / rawMax) * config.max * 10) / 10;
+}
+
+function updateScores() {
+  const scores = SECTION_CONFIG.map(c => calcSectionScore(c));
+  const total  = Math.round(scores.reduce((a, b) => a + b, 0) * 10) / 10;
+
+  // Section previews
+  scores.forEach((s, i) => {
+    const el = document.getElementById(`s${i+1}-score-preview`);
+    if (el) el.textContent = s;
+  });
+
+  // Top score bubble
+  document.getElementById('score-bubble').textContent = `${total} / 100`;
+
+  // Review step
+  scores.forEach((s, i) => {
+    const el = document.getElementById(`rv-s${i+1}`);
+    if (el) el.textContent = s;
+  });
+  const totalEl = document.getElementById('total-score-big');
+  if (totalEl) totalEl.textContent = total;
+
+  const statusEl = document.getElementById('total-status');
+  const card = document.getElementById('total-card');
+  if (statusEl) {
+    if (total >= 80) { statusEl.textContent = '🟢 ดี — ผ่านเกณฑ์'; card.style.background='#1a9e3f'; }
+    else if (total >= 60) { statusEl.textContent = '🟡 พอใช้ — ต้องพัฒนา'; card.style.background='#cc7a00'; }
+    else { statusEl.textContent = '🔴 ต้องแก้ไขด่วน'; card.style.background='#cc2222'; }
+  }
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+function updateUI() {
+  document.querySelectorAll('.step').forEach((el, i) => {
+    el.classList.toggle('active', i === currentStep);
+  });
+
+  const pct = Math.round((currentStep / (TOTAL_STEPS - 1)) * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('step-label').textContent =
+    `ขั้นตอนที่ ${currentStep + 1} จาก ${TOTAL_STEPS}`;
+
+  document.getElementById('btn-back').style.display = currentStep === 0 ? 'none' : '';
+  const isLast = currentStep === TOTAL_STEPS - 1;
+  document.getElementById('btn-next').style.display = isLast ? 'none' : '';
+  document.getElementById('btn-submit').style.display = isLast ? '' : 'none';
+
+  if (currentStep === TOTAL_STEPS - 1) buildReviewSummary();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextStep() {
+  if (currentStep === 0) {
+    const branch = document.getElementById('f-branch').value;
+    if (!branch) { alert('กรุณาเลือกสาขาก่อน'); return; }
+    formData.branch   = branch;
+    formData.visit_date = document.getElementById('f-date').value;
+    formData.branch_manager = document.getElementById('f-bm').value;
+    formData.visitor  = document.getElementById('f-visitor').value;
+    document.getElementById('tb-branch-name').textContent = branch;
+  }
+  // Collect notes
+  ['s1','s2','s3','s4','s5'].forEach(s => {
+    const el = document.getElementById(`${s}_notes`);
+    if (el) formData[`${s}_notes`] = el.value;
+  });
+  if (currentStep < TOTAL_STEPS - 1) { currentStep++; updateUI(); }
+}
+
+function prevStep() {
+  if (currentStep > 0) { currentStep--; updateUI(); }
+}
+
+function updateBranchLabel() {
+  const v = document.getElementById('f-branch').value;
+  document.getElementById('tb-branch-name').textContent = v || 'กรุณากรอกข้อมูลสาขา';
+}
+
+function buildReviewSummary() {
+  updateScores();
+  const el = document.getElementById('visit-summary');
+  el.innerHTML = `
+    <div class="vis-row"><span class="vr-k">สาขา</span><span class="vr-v">${formData.branch||'—'}</span></div>
+    <div class="vis-row"><span class="vr-k">วันที่</span><span class="vr-v">${formData.visit_date||'—'}</span></div>
+    <div class="vis-row"><span class="vr-k">Branch Manager</span><span class="vr-v">${formData.branch_manager||'—'}</span></div>
+    <div class="vis-row"><span class="vr-k">Area Manager</span><span class="vr-v">${formData.visitor||'—'}</span></div>
+  `;
+}
+
+// ══════════════════════════════════════════
+//  SUBMIT
+// ══════════════════════════════════════════
+function submitForm() {
+  // Collect all notes one more time
+  ['s1','s2','s3','s4','s5'].forEach(s => {
+    const el = document.getElementById(`${s}_notes`);
+    if (el) formData[`${s}_notes`] = el.value;
+  });
+
+  // Collect actions
+  actions.forEach((a, i) => {
+    formData[`action${i+1}`]          = a.text;
+    formData[`action${i+1}_priority`] = a.priority;
+    formData[`action${i+1}_owner`]    = a.owner;
+    formData[`action${i+1}_deadline`] = a.deadline;
+  });
+
+  // Calculate scores
+  const scores = SECTION_CONFIG.map(c => calcSectionScore(c));
+  const total  = Math.round(scores.reduce((a, b) => a + b, 0) * 10) / 10;
+  SECTION_CONFIG.forEach((c, i) => { formData[`${c.key}_score`] = scores[i]; });
+  formData.total_score = total;
+
+  if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+    alert('⚠️ กรุณาวาง Apps Script URL ใน APPS_SCRIPT_URL ก่อนใช้งานจริง\n\nข้อมูลที่จะส่ง:\n' + JSON.stringify(formData, null, 2).substring(0,300) + '...');
+    return;
+  }
+
+  document.getElementById('loading').classList.add('show');
+
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(formData)
+  })
+  .then(() => {
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('success-msg').textContent =
+      `บันทึกข้อมูล Visit สาขา ${formData.branch} คะแนน ${total}/100 เรียบร้อยแล้ว`;
+    document.getElementById('success').classList.add('show');
+  })
+  .catch(err => {
+    document.getElementById('loading').classList.remove('show');
+    alert('เกิดข้อผิดพลาด: ' + err.message);
+  });
+}
+
+function resetForm() {
+  location.reload();
+}
+</script>
+</body>
+</html>

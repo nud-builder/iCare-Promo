@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iCare Visit Dashboard — P&L Recovery</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+  :root {
+    --s1:#1d1d1f; --s2:#34c759; --s3:#0071e3; --s4:#af52de;
+    --s5:#ff9500; --danger:#ff3b30; --warn:#ff9500; --ok:#34c759;
+    --bg:#f2f2f7; --card:#ffffff; --border:#e5e5ea;
+    --text:#1c1c1e; --sub:#6c6c70;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--s1); color: white;
+    padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .hdr-left .hdr-title { font-size: 20px; font-weight: 700; }
+  .hdr-left .hdr-sub { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+  .hdr-right { display: flex; gap: 10px; align-items: center; }
+  .config-btn {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+    color: white; padding: 7px 14px; border-radius: 8px; cursor: pointer;
+    font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 600;
+  }
+  .config-btn:hover { background: rgba(255,255,255,0.25); }
+  #last-update { font-size: 11px; opacity: 0.5; }
+
+  /* ── FILTERS ── */
+  .filters {
+    background: white; border-bottom: 1px solid var(--border);
+    padding: 10px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .filters label { font-size: 12px; font-weight: 600; color: var(--sub); }
+  .filters select {
+    border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 6px 12px; font-family: 'Sarabun', sans-serif; font-size: 13px;
+    color: var(--text); background: white; outline: none; cursor: pointer;
+  }
+  .filters select:focus { border-color: var(--s3); }
+  #btn-refresh {
+    margin-left: auto; background: var(--s3); color: white;
+    border: none; border-radius: 8px; padding: 7px 16px;
+    font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  #status-bar { font-size: 12px; color: var(--sub); padding: 6px 24px; background: #fffbec; border-bottom: 1px solid #ffd60a; display: none; }
+
+  /* ── MAIN GRID ── */
+  main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
+
+  /* ── KPI CARDS ── */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .kpi-card {
+    background: var(--card); border-radius: 14px; padding: 18px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    border-left: 4px solid var(--border);
+  }
+  .kpi-card.kpi-ok   { border-left-color: var(--ok); }
+  .kpi-card.kpi-warn { border-left-color: var(--warn); }
+  .kpi-card.kpi-bad  { border-left-color: var(--danger); }
+  .kpi-card.kpi-info { border-left-color: var(--s3); }
+  .kpi-label { font-size: 11px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .kpi-value { font-size: 32px; font-weight: 700; line-height: 1; }
+  .kpi-sub   { font-size: 12px; color: var(--sub); margin-top: 4px; }
+
+  /* ── CHARTS GRID ── */
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .chart-wide { grid-column: span 2; }
+  .chart-card {
+    background: var(--card); border-radius: 14px;
+    padding: 18px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+  .chart-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .chart-card .chart-sub { font-size: 11px; color: var(--sub); margin-bottom: 14px; }
+  .chart-wrap { position: relative; height: 240px; }
+  .chart-wrap.tall { height: 300px; }
+
+  /* ── TABLE ── */
+  .table-card {
+    background: var(--card); border-radius: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07); margin-bottom: 20px; overflow: hidden;
+  }
+  .table-card .tc-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .table-card .tc-header h3 { font-size: 14px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #f9f9fb; padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
+  th:hover { background: #f0f0f5; }
+  td { padding: 10px 14px; border-bottom: 1px solid #f5f5f7; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+  .score-pill {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 700; white-space: nowrap;
+  }
+  .pill-ok   { background: #edfaf2; color: #1a9e3f; }
+  .pill-warn { background: #fff8ec; color: #cc7a00; }
+  .pill-bad  { background: #fff0ef; color: var(--danger); }
+  .fail-item { display: inline-block; background: #fff0ef; color: var(--danger); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; margin: 1px; }
+  .action-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+  .badge-h { background:#fff0ef; color:var(--danger); }
+  .badge-m { background:#fff8ec; color:#cc7a00; }
+  .badge-l { background:#edfaf2; color:#1a9e3f; }
+  .branch-tag { font-weight: 700; }
+
+  /* ── FAIL ITEMS TABLE ── */
+  .fail-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .fail-bar-bg { flex: 1; height: 8px; background: #f0f0f5; border-radius: 4px; overflow: hidden; }
+  .fail-bar-fill { height: 100%; background: var(--danger); border-radius: 4px; }
+  .fail-count { font-weight: 700; color: var(--danger); font-size: 13px; min-width: 24px; }
+
+  /* ── CONFIG MODAL ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 24px; width: 480px; max-width: 90vw; }
+  .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+  .modal label { font-size: 12px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: 0.4px; display: block; margin-bottom: 6px; }
+  .modal input { width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px; font-family: 'Sarabun', sans-serif; font-size: 14px; outline: none; margin-bottom: 16px; }
+  .modal input:focus { border-color: var(--s3); }
+  .modal-note { font-size: 12px; color: var(--sub); background: #f5f5f7; border-radius: 8px; padding: 10px 12px; margin-bottom: 16px; line-height: 1.6; }
+  .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+  .modal-btns button { padding: 10px 20px; border-radius: 10px; border: none; font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .btn-cancel { background: var(--bg); color: var(--sub); }
+  .btn-save { background: var(--s3); color: white; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 40px 20px; color: var(--sub); }
+  .empty .empty-icon { font-size: 40px; margin-bottom: 10px; }
+  .empty p { font-size: 14px; line-height: 1.7; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .charts-grid { grid-template-columns: 1fr; }
+    .chart-wide { grid-column: span 1; }
+    main { padding: 16px; }
+    header { padding: 12px 16px; }
+    .filters { padding: 8px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="hdr-left">
+    <div class="hdr-title">iCare — Visit Dashboard</div>
+    <div class="hdr-sub">P&L Recovery Tracking · Area Manager: Thanongsak</div>
+  </div>
+  <div class="hdr-right">
+    <span id="last-update"></span>
+    <button class="config-btn" onclick="openConfig()">⚙️ ตั้งค่า URL</button>
+  </div>
+</header>
+
+<!-- STATUS BAR -->
+<div id="status-bar">⚠️ ยังไม่ได้ตั้งค่า Apps Script URL — กำลังแสดงข้อมูลตัวอย่าง กด "ตั้งค่า URL" เพื่อเชื่อมต่อ Google Sheets จริง</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <label>สาขา</label>
+  <select id="f-branch" onchange="applyFilters()">
+    <option value="">ทุกสาขา</option>
+  </select>
+  <label>เดือน</label>
+  <select id="f-month" onchange="applyFilters()">
+    <option value="">ทุกเดือน</option>
+  </select>
+  <button id="btn-refresh" onclick="loadData()">🔄 Refresh</button>
+</div>
+
+<main>
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi-card kpi-info">
+      <div class="kpi-label">Avg Score (Filtered)</div>
+      <div class="kpi-value" id="kpi-avg">—</div>
+      <div class="kpi-sub" id="kpi-avg-sub">จากการ Visit ทั้งหมด</div>
+    </div>
+    <div class="kpi-card kpi-ok">
+      <div class="kpi-label">Visit เดือนนี้</div>
+      <div class="kpi-value" id="kpi-visits">—</div>
+      <div class="kpi-sub" id="kpi-visits-sub">ครั้ง</div>
+    </div>
+    <div class="kpi-card kpi-bad">
+      <div class="kpi-label">สาขา Score &lt; 60</div>
+      <div class="kpi-value" id="kpi-red">—</div>
+      <div class="kpi-sub">ต้องดำเนินการด่วน</div>
+    </div>
+    <div class="kpi-card kpi-warn">
+      <div class="kpi-label">Top Fail Item</div>
+      <div class="kpi-value" style="font-size:14px;padding-top:6px;" id="kpi-topfail">—</div>
+      <div class="kpi-sub">ปัญหาที่พบบ่อยที่สุด</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="charts-grid">
+    <div class="chart-card chart-wide">
+      <h3>📊 คะแนนล่าสุดแต่ละสาขา (Latest Visit Score)</h3>
+      <div class="chart-sub">เรียงตามคะแนนน้อยไปมาก · สีแดง = ต้องแก้ด่วน · สีเหลือง = พอใช้ · สีเขียว = ผ่าน</div>
+      <div class="chart-wrap"><canvas id="chart-branch-score"></canvas></div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2 -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>📈 Trend คะแนนรายเดือน</h3>
+      <div class="chart-sub">เทียบคะแนนเฉลี่ยทุกสาขาย้อนหลัง 6 เดือน</div>
+      <div class="chart-wrap tall"><canvas id="chart-trend"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>🕸 Section Breakdown (เฉลี่ยทุก Visit)</h3>
+      <div class="chart-sub">เทียบแต่ละ Section เป็น % ของคะแนนเต็ม</div>
+      <div class="chart-wrap tall"><canvas id="chart-radar"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TOP FAILING ITEMS -->
+  <div class="table-card" style="margin-bottom:20px;">
+    <div class="tc-header">
+      <h3>🔴 Items ที่ Fail บ่อยที่สุด (Rating ≤ 1)</h3>
+      <span style="font-size:12px;color:var(--sub);">จากทุก Visit ที่ผ่านมา</span>
+    </div>
+    <div id="fail-items-list" style="padding:16px 20px;"></div>
+  </div>
+
+  <!-- VISIT HISTORY TABLE -->
+  <div class="table-card">
+    <div class="tc-header">
+      <h3>📋 ประวัติ Visit ทั้งหมด</h3>
+      <span style="font-size:12px;color:var(--sub);" id="visit-count-label"></span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table id="visit-table">
+        <thead>
+          <tr>
+            <th onclick="sortTable('visit_date')">วันที่ ↕</th>
+            <th onclick="sortTable('branch')">สาขา ↕</th>
+            <th onclick="sortTable('branch_manager')">BM</th>
+            <th onclick="sortTable('total_score')">Total ↕</th>
+            <th onclick="sortTable('s1_score')">Service</th>
+            <th onclick="sortTable('s2_score')">Stock</th>
+            <th onclick="sortTable('s3_score')">Revenue</th>
+            <th onclick="sortTable('s4_score')">People</th>
+            <th onclick="sortTable('s5_score')">CX</th>
+            <th>Action Items</th>
+          </tr>
+        </thead>
+        <tbody id="visit-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ACTION ITEMS TRACKER -->
+  <div class="table-card">
+    <div class="tc-header">
+      <h3>✅ Action Items รวมทุกสาขา</h3>
+      <span style="font-size:12px;color:var(--sub);">เฉพาะ Action ที่กรอกไว้</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>สาขา</th>
+            <th>วันที่ Visit</th>
+            <th>Action</th>
+            <th>Priority</th>
+            <th>ผู้รับผิดชอบ</th>
+            <th>Deadline</th>
+          </tr>
+        </thead>
+        <tbody id="action-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- CONFIG MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>⚙️ ตั้งค่า Apps Script URL</h3>
+    <div class="modal-note">
+      <strong>วิธีรับ URL:</strong><br>
+      1. เปิด Google Apps Script → Deploy → Manage Deployments<br>
+      2. คัดลอก Web App URL<br>
+      3. วางในช่องด้านล่าง แล้วกด บันทึก
+    </div>
+    <label>Apps Script Web App URL</label>
+    <input type="text" id="modal-url" placeholder="https://script.google.com/macros/s/.../exec">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeConfig()">ยกเลิก</button>
+      <button class="btn-save" onclick="saveConfig()">💾 บันทึกและโหลดข้อมูล</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  CONFIG & STATE
+// ══════════════════════════════════════════════════════
+let SCRIPT_URL = localStorage.getItem('icare_script_url') || '';
+let allRows    = [];
+let filtered   = [];
+let sortKey    = 'visit_date';
+let sortAsc    = false;
+let charts     = {};
+
+const ITEM_LABELS = {
+  s1_greet:'[S1] Staff ทักทายภายใน 2 นาที', s1_diagnose:'[S1] Diagnose ก่อนเปิด Job',
+  s1_estimate:'[S1] แจ้ง Estimate ก่อนรับงาน', s1_gsx_open:'[S1] เปิด GSX Job ครบถ้วน',
+  s1_tat:'[S1] TAT อยู่ใน SLA', s1_queue:'[S1] มีระบบ Queue',
+  s1_workbench:'[S1] Workbench สะอาด', s1_qc:'[S1] QC ก่อนส่งคืน',
+  s1_explain:'[S1] อธิบายงานให้ลูกค้า', s1_billing:'[S1] เก็บเงินถูกต้อง',
+  s1_followup:'[S1] Follow Up ลูกค้า',
+  s2_fastparts:'[S2] Fast-Moving Parts พร้อม', s2_nobacklog:'[S2] ไม่มี Job ค้าง Parts',
+  s2_stockcount:'[S2] Stock Count ตรงระบบ', s2_noexpired:'[S2] ไม่มี Parts Expired',
+  s2_storagelabel:'[S2] จัดเก็บ Parts มี Label', s2_orderprocess:'[S2] กระบวนการสั่ง Parts',
+  s2_accessory:'[S2] Accessory พร้อมขาย', s2_walkinsale:'[S2] สินค้าเปลี่ยนทันที',
+  s2_pricetag:'[S2] ราคาติดชัดเจน', s2_stockcheck:'[S2] ตรวจ Stock ประจำ',
+  s2_exunit:'[S2] Exchange Unit พร้อม', s2_exknow:'[S2] Staff รู้วิธี Exchange',
+  s2_exdefect:'[S2] Defective Unit ถูก Log',
+  s3_offerex:'[S3] Offer Exchange ให้ลูกค้า', s3_upsell:'[S3] Upsell Accessory',
+  s3_jobvscap:'[S3] GSX Jobs vs Capacity', s3_delivery:'[S3] Delivery/Drop_APP ใช้งาน',
+  s3_revmix:'[S3] Revenue Mix OOW', s3_target:'[S3] Staff รู้ Target',
+  s4_headcount:'[S4] Head Count vs Budget', s4_productivity:'[S4] Productivity ต่อคน',
+  s4_cert:'[S4] Apple Certification', s4_leadership:'[S4] BM Leadership',
+  s4_morale:'[S4] Morale ทีม', s4_turnover:'[S4] Turnover ต่ำ',
+  s4_deadhours:'[S4] Dead Hours พฤติกรรม',
+  s5_visual:'[S5] Visual Merchandising', s5_walkout:'[S5] ไม่มี Walk-out',
+  s5_waittime:'[S5] Wait Time < 5 นาที', s5_complaint:'[S5] รับ Complaint เป็นระบบ',
+};
+
+// ══════════════════════════════════════════════════════
+//  SAMPLE DATA (ใช้เมื่อยังไม่มี URL จริง)
+// ══════════════════════════════════════════════════════
+const SAMPLE = [
+  { visit_date:'2026-05-02', branch:'Mega Bangna', branch_manager:'สมชาย', visitor:'Thanongsak', total_score:52, s1_score:10, s2_score:12, s3_score:12, s4_score:12, s5_score:6, s1_greet:1, s1_tat:1, s2_fastparts:1, s2_exunit:1, s3_offerex:1, s4_leadership:1, action1:'Training Exchange ให้ Staff', action1_priority:'High', action1_owner:'BM สมชาย', action1_deadline:'2026-05-15', action2:'สั่ง Parts เพิ่ม Battery iPhone 15', action2_priority:'High', action2_owner:'BM สมชาย', action2_deadline:'2026-05-10' },
+  { visit_date:'2026-05-03', branch:'Central Phitsanulok', branch_manager:'วิภา', visitor:'Thanongsak', total_score:68, s1_score:16, s2_score:18, s3_score:14, s4_score:13, s5_score:7, s1_greet:2, s1_tat:2, s2_fastparts:2, s2_exunit:3, s3_offerex:2, s4_leadership:2, action1:'ปรับกระบวนการรับลูกค้า', action1_priority:'Medium', action1_owner:'BM วิภา', action1_deadline:'2026-05-20' },
+  { visit_date:'2026-05-04', branch:'Central Chiangmai Festival', branch_manager:'ธนพล', visitor:'Thanongsak', total_score:44, s1_score:9, s2_score:10, s3_score:10, s4_score:10, s5_score:5, s1_greet:1, s1_tat:1, s2_fastparts:1, s2_stockcount:1, s3_offerex:1, s3_target:1, s4_leadership:1, s4_morale:1, action1:'Coaching BM Leadership', action1_priority:'High', action1_owner:'Thanongsak', action1_deadline:'2026-05-12', action2:'นับ Stock ทั้งร้าน', action2_priority:'High', action2_owner:'BM ธนพล', action2_deadline:'2026-05-08', action3:'ประชุมทีม Target', action3_priority:'Medium', action3_owner:'BM ธนพล', action3_deadline:'2026-05-10' },
+  { visit_date:'2026-04-15', branch:'Mega Bangna', branch_manager:'สมชาย', visitor:'Thanongsak', total_score:48, s1_score:11, s2_score:11, s3_score:11, s4_score:10, s5_score:5, s1_greet:1, s1_tat:1, s2_fastparts:1, s3_offerex:1, s4_leadership:1 },
+  { visit_date:'2026-04-18', branch:'MAYA Chiangmai', branch_manager:'กานต์', visitor:'Thanongsak', total_score:75, s1_score:19, s2_score:20, s3_score:15, s4_score:14, s5_score:7, s1_greet:3, s1_tat:2, s2_fastparts:2, s3_offerex:2, s4_leadership:2 },
+  { visit_date:'2026-04-20', branch:'Central Chiangmai Airport', branch_manager:'ปิยะ', visitor:'Thanongsak', total_score:61, s1_score:15, s2_score:15, s3_score:13, s4_score:12, s5_score:6, s1_greet:2, s1_tat:2, s2_fastparts:2, s3_offerex:2, s4_leadership:2 },
+];
+
+// ══════════════════════════════════════════════════════
+//  DATA LOADING
+// ══════════════════════════════════════════════════════
+async function loadData() {
+  if (!SCRIPT_URL) {
+    document.getElementById('status-bar').style.display = 'block';
+    allRows = SAMPLE;
+    populateFilters();
+    applyFilters();
+    document.getElementById('last-update').textContent = 'ข้อมูลตัวอย่าง';
+    return;
+  }
+  document.getElementById('status-bar').style.display = 'none';
+  document.getElementById('btn-refresh').textContent = '⏳ กำลังโหลด...';
+  try {
+    const res  = await fetch(SCRIPT_URL + '?action=visits');
+    const json = await res.json();
+    allRows = json.rows || [];
+    document.getElementById('last-update').textContent = 'อัพเดท: ' + new Date().toLocaleTimeString('th-TH');
+    populateFilters();
+    applyFilters();
+  } catch (e) {
+    alert('โหลดข้อมูลไม่ได้: ' + e.message + '\n\nตรวจสอบ URL หรือสิทธิ์ Apps Script');
+    allRows = SAMPLE;
+    populateFilters();
+    applyFilters();
+  }
+  document.getElementById('btn-refresh').textContent = '🔄 Refresh';
+}
+
+function populateFilters() {
+  const branches = [...new Set(allRows.map(r => r.branch))].sort();
+  const months   = [...new Set(allRows.map(r => (r.visit_date||'').substring(0,7)))].sort().reverse();
+  const bf = document.getElementById('f-branch');
+  const mf = document.getElementById('f-month');
+  bf.innerHTML = '<option value="">ทุกสาขา</option>' + branches.map(b => `<option>${b}</option>`).join('');
+  mf.innerHTML = '<option value="">ทุกเดือน</option>' + months.map(m => `<option value="${m}">${m}</option>`).join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  FILTERS & RENDER
+// ══════════════════════════════════════════════════════
+function applyFilters() {
+  const b = document.getElementById('f-branch').value;
+  const m = document.getElementById('f-month').value;
+  filtered = allRows.filter(r =>
+    (!b || r.branch === b) &&
+    (!m || (r.visit_date||'').startsWith(m))
+  );
+  renderAll();
+}
+
+function renderAll() {
+  renderKPIs();
+  renderBranchScore();
+  renderTrend();
+  renderRadar();
+  renderFailItems();
+  renderVisitTable();
+  renderActionTable();
+}
+
+// ══════════════════════════════════════════════════════
+//  KPI CARDS
+// ══════════════════════════════════════════════════════
+function renderKPIs() {
+  // Avg score
+  const scores = filtered.map(r => parseFloat(r.total_score)||0).filter(s => s > 0);
+  const avg    = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '—';
+  document.getElementById('kpi-avg').textContent = avg;
+  document.getElementById('kpi-avg-sub').textContent = `จาก ${scores.length} Visit`;
+
+  // This month visits
+  const thisMonth = new Date().toISOString().substring(0,7);
+  const thisMonthCount = allRows.filter(r => (r.visit_date||'').startsWith(thisMonth)).length;
+  document.getElementById('kpi-visits').textContent = thisMonthCount;
+
+  // Branches score < 60 (latest per branch)
+  const latestByBranch = getLatestPerBranch(filtered);
+  const redCount = Object.values(latestByBranch).filter(r => (parseFloat(r.total_score)||0) < 60).length;
+  document.getElementById('kpi-red').textContent = redCount;
+
+  // Top fail item
+  const failCounts = countFailItems(filtered);
+  const topFail = Object.entries(failCounts).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('kpi-topfail').textContent = topFail ? ITEM_LABELS[topFail[0]] || topFail[0] : '—';
+}
+
+function getLatestPerBranch(rows) {
+  const map = {};
+  rows.forEach(r => {
+    if (!map[r.branch] || r.visit_date > map[r.branch].visit_date) map[r.branch] = r;
+  });
+  return map;
+}
+
+function countFailItems(rows) {
+  const counts = {};
+  const allItems = Object.keys(ITEM_LABELS);
+  rows.forEach(r => {
+    allItems.forEach(k => {
+      if ((parseFloat(r[k])||0) <= 1 && r[k] !== '' && r[k] !== undefined) {
+        counts[k] = (counts[k]||0) + 1;
+      }
+    });
+  });
+  return counts;
+}
+
+// ══════════════════════════════════════════════════════
+//  BRANCH SCORE CHART
+// ══════════════════════════════════════════════════════
+function renderBranchScore() {
+  const latest = getLatestPerBranch(filtered);
+  const sorted = Object.values(latest).sort((a,b)=>(parseFloat(a.total_score)||0)-(parseFloat(b.total_score)||0));
+  const labels = sorted.map(r => r.branch);
+  const data   = sorted.map(r => parseFloat(r.total_score)||0);
+  const colors = data.map(s => s < 60 ? '#ff3b30' : s < 80 ? '#ff9500' : '#34c759');
+
+  destroyChart('branch-score');
+  charts['branch-score'] = new Chart(document.getElementById('chart-branch-score'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Score', data, backgroundColor: colors, borderRadius: 6, borderSkipped: false }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.raw} / 100 คะแนน` } }
+      },
+      scales: {
+        x: { min: 0, max: 100, grid: { color: '#f0f0f5' }, ticks: { color: '#6c6c70' } },
+        y: { grid: { display: false }, ticks: { color: '#1c1c1e', font: { family:'Sarabun', size:13 } } }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  TREND CHART
+// ══════════════════════════════════════════════════════
+function renderTrend() {
+  // Group by month → avg score
+  const byMonth = {};
+  allRows.forEach(r => {
+    const m = (r.visit_date||'').substring(0,7);
+    if (!m) return;
+    if (!byMonth[m]) byMonth[m] = [];
+    byMonth[m].push(parseFloat(r.total_score)||0);
+  });
+  const months = Object.keys(byMonth).sort().slice(-6);
+  const avgs   = months.map(m => {
+    const vals = byMonth[m];
+    return +(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
+  });
+  const labels = months.map(m => {
+    const [y,mo] = m.split('-');
+    return `${['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'][parseInt(mo)-1]} ${y}`;
+  });
+
+  destroyChart('trend');
+  charts['trend'] = new Chart(document.getElementById('chart-trend'), {
+    type: 'line',
+    data: { labels, datasets: [{
+      label: 'คะแนนเฉลี่ย', data: avgs,
+      borderColor: '#0071e3', backgroundColor: 'rgba(0,113,227,0.1)',
+      borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: '#0071e3',
+      fill: true, tension: 0.4
+    }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.raw} / 100` } }
+      },
+      scales: {
+        y: { min: 0, max: 100, grid: { color: '#f0f0f5' }, ticks: { color: '#6c6c70' },
+          annotation: { line: { value:60, borderColor:'red' } }
+        },
+        x: { grid: { display: false }, ticks: { color: '#6c6c70', font:{ family:'Sarabun' } } }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  RADAR CHART
+// ══════════════════════════════════════════════════════
+function renderRadar() {
+  const n = filtered.length || 1;
+  const avg = key => filtered.reduce((s,r) => s + (parseFloat(r[key])||0), 0) / n;
+  const data = [
+    (avg('s1_score') / 25 * 100).toFixed(1),
+    (avg('s2_score') / 25 * 100).toFixed(1),
+    (avg('s3_score') / 20 * 100).toFixed(1),
+    (avg('s4_score') / 20 * 100).toFixed(1),
+    (avg('s5_score') / 10 * 100).toFixed(1),
+  ];
+
+  destroyChart('radar');
+  charts['radar'] = new Chart(document.getElementById('chart-radar'), {
+    type: 'radar',
+    data: {
+      labels: ['Service\nOps','Stock &\nInventory','Revenue &\nSales','People &\nProductivity','Customer\nExperience'],
+      datasets: [{
+        label: 'เฉลี่ย % ของคะแนนเต็ม', data,
+        backgroundColor: 'rgba(0,113,227,0.15)', borderColor: '#0071e3',
+        borderWidth: 2, pointBackgroundColor: '#0071e3', pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        r: {
+          min: 0, max: 100,
+          ticks: { stepSize: 25, color: '#6c6c70', backdropColor: 'transparent', font:{ size:10 } },
+          grid: { color: '#e5e5ea' },
+          pointLabels: { color: '#1c1c1e', font:{ family:'Sarabun', size:12, weight:'600' } }
+        }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  FAIL ITEMS
+// ══════════════════════════════════════════════════════
+function renderFailItems() {
+  const counts = countFailItems(filtered);
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  const maxCount = sorted[0]?.[1] || 1;
+  const container = document.getElementById('fail-items-list');
+
+  if (!sorted.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><p>ไม่มี Items ที่ Fail</p></div>';
+    return;
+  }
+
+  container.innerHTML = sorted.map(([k,count]) => `
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f5f5f7;">
+      <div style="flex:1;font-size:13px;font-weight:500;">${ITEM_LABELS[k]||k}</div>
+      <div class="fail-bar-wrap" style="width:200px;">
+        <div class="fail-bar-bg"><div class="fail-bar-fill" style="width:${(count/maxCount*100).toFixed(0)}%"></div></div>
+      </div>
+      <div class="fail-count">${count}x</div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  VISIT TABLE
+// ══════════════════════════════════════════════════════
+function sortTable(key) {
+  if (sortKey === key) sortAsc = !sortAsc;
+  else { sortKey = key; sortAsc = false; }
+  renderVisitTable();
+}
+
+function renderVisitTable() {
+  const sorted = [...filtered].sort((a,b) => {
+    const av = a[sortKey] || '', bv = b[sortKey] || '';
+    const n  = parseFloat(av), m = parseFloat(bv);
+    const cmp = isNaN(n) ? String(av).localeCompare(String(bv)) : n - m;
+    return sortAsc ? cmp : -cmp;
+  });
+
+  document.getElementById('visit-count-label').textContent = `${sorted.length} รายการ`;
+  const tbody = document.getElementById('visit-tbody');
+  if (!sorted.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--sub);">ไม่พบข้อมูล</td></tr>';
+    return;
+  }
+
+  // Collect critical fails per row
+  const allItems = Object.keys(ITEM_LABELS);
+  tbody.innerHTML = sorted.map(r => {
+    const score = parseFloat(r.total_score)||0;
+    const pill  = score>=80?'pill-ok':score>=60?'pill-warn':'pill-bad';
+    const fails = allItems.filter(k => (parseFloat(r[k])||0) === 1).slice(0,3);
+    const failHTML = fails.map(k => `<span class="fail-item">${(ITEM_LABELS[k]||k).replace(/\[S\d\] /,'')}</span>`).join('');
+
+    return `<tr>
+      <td>${r.visit_date||'—'}</td>
+      <td class="branch-tag">${r.branch||'—'}</td>
+      <td>${r.branch_manager||'—'}</td>
+      <td><span class="score-pill ${pill}">${score} / 100</span></td>
+      <td>${parseFloat(r.s1_score)||0} / 25</td>
+      <td>${parseFloat(r.s2_score)||0} / 25</td>
+      <td>${parseFloat(r.s3_score)||0} / 20</td>
+      <td>${parseFloat(r.s4_score)||0} / 20</td>
+      <td>${parseFloat(r.s5_score)||0} / 10</td>
+      <td>${failHTML || '<span style="color:var(--sub);font-size:12px;">—</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  ACTION TABLE
+// ══════════════════════════════════════════════════════
+function renderActionTable() {
+  const tbody = document.getElementById('action-tbody');
+  const rows  = [];
+
+  filtered.forEach(r => {
+    for (let i = 1; i <= 5; i++) {
+      const text = r[`action${i}`];
+      if (text && text.trim()) {
+        rows.push({
+          branch: r.branch, date: r.visit_date,
+          text, priority: r[`action${i}_priority`],
+          owner: r[`action${i}_owner`], deadline: r[`action${i}_deadline`]
+        });
+      }
+    }
+  });
+
+  rows.sort((a,b) => {
+    const order = { High:0, Medium:1, Low:2 };
+    return (order[a.priority]??3) - (order[b.priority]??3);
+  });
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--sub);">ไม่มี Action Items</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(a => {
+    const pc = a.priority==='High'?'badge-h':a.priority==='Medium'?'badge-m':'badge-l';
+    return `<tr>
+      <td class="branch-tag">${a.branch||'—'}</td>
+      <td>${a.date||'—'}</td>
+      <td>${a.text}</td>
+      <td><span class="action-badge ${pc}">${a.priority||'—'}</span></td>
+      <td>${a.owner||'—'}</td>
+      <td>${a.deadline||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  CONFIG MODAL
+// ══════════════════════════════════════════════════════
+function openConfig() {
+  document.getElementById('modal-url').value = SCRIPT_URL;
+  document.getElementById('modal').classList.add('show');
+}
+function closeConfig() { document.getElementById('modal').classList.remove('show'); }
+function saveConfig() {
+  SCRIPT_URL = document.getElementById('modal-url').value.trim();
+  localStorage.setItem('icare_script_url', SCRIPT_URL);
+  closeConfig();
+  loadData();
+}
+
+// ══════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════
+function destroyChart(key) {
+  if (charts[key]) { charts[key].destroy(); delete charts[key]; }
+}
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', loadData);
+</script>
+</body>
+</html>
